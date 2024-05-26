@@ -3,9 +3,10 @@
 #include <iostream>
 #include "spdlog/spdlog.h"
 
-class ChangePowerPlanTask : public ITask {
+class ChangePowerPlanTask : public ITask
+{
 public:
-    ChangePowerPlanTask( ) {}
+    ChangePowerPlanTask() {}
     ResultType execute() override;
 
     ResultType getExecutionResult() const override;

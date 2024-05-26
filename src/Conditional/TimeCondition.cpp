@@ -1,13 +1,17 @@
 #include "Conditional/TimeCondition.h"
 
-TimeCondition::TimeCondition(int Uhour): Uhour(Uhour){}
+TimeCondition::TimeCondition(int Uhour) : Uhour(Uhour) {}
 
-bool TimeCondition::evaluate() const {
-        SYSTEMTIME systemTime;
-        GetLocalTime(&systemTime);
-        int hour = systemTime.wHour;
+bool TimeCondition::evaluate() const
+{
+    SYSTEMTIME systemTime;
+    GetLocalTime(&systemTime);
+    int hour = systemTime.wHour;
 
-        return Uhour > systemTime.wHour ? true : false;
-    }
+    return Uhour > systemTime.wHour ? true : false;
+}
 
-int TimeCondition::getHour() const { return Uhour; }
+int TimeCondition::getHour() const
+{
+    return Uhour;
+}

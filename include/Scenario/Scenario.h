@@ -3,7 +3,8 @@
 #include <memory>
 #include "ScenarioStep.h"
 
-class Scenario {
+class Scenario
+{
 public:
     void addStep(std::shared_ptr<ScenarioStep> step);
 
