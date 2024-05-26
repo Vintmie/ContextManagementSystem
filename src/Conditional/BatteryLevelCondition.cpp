@@ -2,16 +2,18 @@
 
 BatteryLevelCondition::BatteryLevelCondition(int crucialLevel) : crucialLevel(crucialLevel) {}
 
-bool BatteryLevelCondition::evaluate() const {
+bool BatteryLevelCondition::evaluate() const
+{
     int currentBatteryLevel = getBatteryLevel();
     return currentBatteryLevel <= crucialLevel;
 }
 
-
-int BatteryLevelCondition::getCrucialLevel() const {
+int BatteryLevelCondition::getCrucialLevel() const
+{
     return crucialLevel;
 }
 
-int BatteryLevelCondition::getBatteryLevel() const {
+int BatteryLevelCondition::getBatteryLevel() const
+{
     return 50;
 }

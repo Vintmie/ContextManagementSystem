@@ -1,6 +1,7 @@
 #pragma once
 
-class IConditional {
+class IConditional
+{
 public:
     virtual ~IConditional() = default;
     virtual bool evaluate() const = 0;

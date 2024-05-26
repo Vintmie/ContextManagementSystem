@@ -2,7 +2,8 @@
 #include "ITask.h"
 #include <windows.h>
 
-class MessageBoxTask : public ITask {
+class MessageBoxTask : public ITask
+{
 public:
     MessageBoxTask() {}
     ResultType execute() override;
@@ -14,5 +15,3 @@ private:
 
     ResultType currentExecutionResult = ResultType::UNKNOWN;
 };
-
-

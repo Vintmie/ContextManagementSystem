@@ -30,6 +30,9 @@ target_link_libraries(ContextManagementSystem PRIVATE spdlog::spdlog)
 # Link nlohmann_json
 target_link_libraries(ContextManagementSystem PRIVATE nlohmann_json::nlohmann_json)
 
+# Create source groups for filters
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "Source Files" FILES ${SOURCE_FILES})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/include PREFIX "Header Files" FILES ${HEADER_FILES})
 
 # Include directories
 target_include_directories(ContextManagementSystem PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

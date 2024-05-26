@@ -1,12 +1,14 @@
 #pragma once
 
-enum class ResultType {
+enum class ResultType
+{
     SUCCESS,
     FAILURE,
     UNKNOWN
 };
 
-class ITask {
+class ITask
+{
 public:
     virtual ~ITask() = default;
     virtual ResultType execute() = 0;
