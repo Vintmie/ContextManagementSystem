@@ -3,17 +3,15 @@
 
 class BatteryLevelCondition : public IConditional {
 public:
-    BatteryLevelCondition(int crucialLevel) : crucialLevel(crucialLevel) {}
+    BatteryLevelCondition(int crucialLevel);
 
-    bool evaluate() const override {
-        int currentBatteryLevel = getBatteryLevel();
-        return currentBatteryLevel <= crucialLevel;
-    }
+    bool evaluate() const override;
+
+    int getCrucialLevel() const;
+
 
 private:
     int crucialLevel;
 
-    int getBatteryLevel() const {
-        return 50;
-    }
+    int getBatteryLevel() const;
 };

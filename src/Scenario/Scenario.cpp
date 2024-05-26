@@ -1,20 +1,15 @@
-#pragma once
-#include <vector>
-#include <memory>
-#include "ScenarioStep.h"
+#include "Scenario/ScenarioStep.h"
+#include "Scenario/Scenario.h"
 
-class Scenario {
-public:
-    void addStep(std::shared_ptr<ScenarioStep> step) {
+    void Scenario::addStep(std::shared_ptr<ScenarioStep> step) {
+        if (steps.size() == 0) step->setExecutionCondition(ExecutionTypeCondition::UNCONDITIONAL);
         steps.push_back(step);
     }
 
-    bool execute() {
+bool Scenario::execute() {
         ResultType prevResult = ResultType::SUCCESS;
 
         for (const auto& step : steps) {
-
-
                 if (step->getExecutionCondition() != ExecutionTypeCondition::UNCONDITIONAL) {
                     // CHECK PREVIOUS STATE
                     if  (prevResult == ResultType::UNKNOWN ||
@@ -32,8 +27,4 @@ public:
                 continue;
         }
         return true;
-    }
-
-private:
-    std::vector<std::shared_ptr<ScenarioStep>> steps;
-};
+}
