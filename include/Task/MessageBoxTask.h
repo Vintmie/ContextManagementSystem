@@ -5,25 +5,12 @@
 class MessageBoxTask : public ITask {
 public:
     MessageBoxTask() {}
-    ResultType execute() override {
-        return getMessageBox();
-    }
+    ResultType execute() override;
 
-    ResultType getExecutionResult() const override {
-        return currentExecutionResult;
-
-    }
+    ResultType getExecutionResult() const override;
 
 private:
-    ResultType getMessageBox() {
-        
-        if (MessageBoxW(NULL, L"Hello from MessageBox!", L"Message", MB_OK | MB_ICONINFORMATION)) {
-            currentExecutionResult = ResultType::SUCCESS;
-            return currentExecutionResult;
-        }
-        return currentExecutionResult;
-
-    }
+    ResultType getMessageBox();
 
     ResultType currentExecutionResult = ResultType::UNKNOWN;
 };

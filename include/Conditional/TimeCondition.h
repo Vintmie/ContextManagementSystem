@@ -7,15 +7,9 @@ class TimeCondition : public IConditional {
 private:
     int Uhour;
 public:
-    TimeCondition(int Uhour): Uhour(Uhour){}
+    TimeCondition(int Uhour);
 
-    bool evaluate() const override {
-        SYSTEMTIME systemTime;
-        GetLocalTime(&systemTime);
-        int hour = systemTime.wHour;
-
-        return Uhour > systemTime.wHour ? true : false;
-    }
-
+    bool evaluate() const override;
+    int getHour() const;
 };
 
