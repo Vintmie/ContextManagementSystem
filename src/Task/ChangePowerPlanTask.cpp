@@ -1,4 +1,5 @@
 #include "Task/ChangePowerPlanTask.h"
+#include "FormatOutput.h"
 
 ResultType ChangePowerPlanTask::execute()
 {
@@ -12,11 +13,9 @@ ResultType ChangePowerPlanTask::getExecutionResult() const
 
 ResultType ChangePowerPlanTask::changePowerPlan()
 {
-    spdlog::info("Power plan changed due to low battery level\n");
-    currentExecutionResult = ResultType::FAILURE;
-    if (currentExecutionResult == ResultType::FAILURE)
-        spdlog::info("changePowerPlan returns: FAILURE\n");
-    else
-        spdlog::info("changePowerPlan returns: SUCCESS\n");
+    auto res_logger = LoggerManager::get_unique_logger();
+    currentExecutionResult = ResultType::SUCCESS;
+    res_logger->info("ChangePowerPlanTask returned: {}\n", currentExecutionResult);
+
     return currentExecutionResult;
 }

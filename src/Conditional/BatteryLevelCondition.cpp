@@ -5,6 +5,7 @@ BatteryLevelCondition::BatteryLevelCondition(int crucialLevel) : crucialLevel(cr
 bool BatteryLevelCondition::evaluate() const
 {
     int currentBatteryLevel = getBatteryLevel();
+    spdlog::info("getBatteryLevel returns: {}\n", currentBatteryLevel <= crucialLevel);
     return currentBatteryLevel <= crucialLevel;
 }
 

@@ -17,9 +17,34 @@ void FSManager::saveScenarios(const ScenarioManager& manager) const
     outFile << j.dump(4);
 }
 
+void FSManager::saveScenarios(const ScenarioManager& manager, const std::string& path) const
+{
+    nlohmann::json j;
+    for (const auto& scenario : manager.getScenarios())
+    {
+        j.push_back(scenarioToJson(*scenario));
+    }
+    std::ofstream outFile(path);
+    outFile << j.dump(4);
+}
+
 void FSManager::loadScenarios(ScenarioManager& manager) const
 {
     std::ifstream inFile(filePath);
+    if (!inFile) return;
+
+    nlohmann::json j;
+    inFile >> j;
+
+    for (const auto& scenarioJson : j)
+    {
+        manager.addScenario(jsonToScenario(scenarioJson));
+    }
+}
+
+void FSManager::loadScenarios(ScenarioManager& manager, const std::string& path) const
+{
+    std::ifstream inFile(path);
     if (!inFile) return;
 
     nlohmann::json j;
