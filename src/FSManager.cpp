@@ -230,3 +230,84 @@ void FSManager::loadScenarioDialog(std::shared_ptr<Scenario>& scenario) const
     scenario = jsonToScenario(j["scenario"]);
     inFile.close();
 }
+
+
+void FSManager::saveScenarioDetails(const Scenario& scenario, const std::string& filePath) const
+{
+    nlohmann::json j;
+    j["name"] = scenario.getName();
+    j["description"] = scenario.getDescription();
+    j["scenario"] = scenarioToJson(scenario);
+
+    std::ofstream outFile(filePath);
+    if (!outFile.is_open())
+    {
+        std::cerr << "Помилка відкриття файлу для запису деталей сценарію.\n";
+        return;
+    }
+
+    outFile << j.dump(4);
+    outFile.close();
+}
+
+void FSManager::loadScenarioDetails(Scenario& scenario, const std::string& filePath) const
+{
+    std::ifstream inFile(filePath);
+    if (!inFile.is_open())
+    {
+        std::cerr << "Помилка відкриття файлу для завантаження деталей сценарію.\n";
+        return;
+    }
+
+    nlohmann::json j;
+    inFile >> j;
+
+    // Завантаження імені та опису сценарію
+    scenario.setName(j["name"]);
+    scenario.setDescription(j["description"]);
+
+    // Завантаження кроків сценарію
+    for (const auto& stepJson : j["scenario"]["steps"])
+    {
+        scenario.addStep(jsonToStep(stepJson));
+    }
+
+    inFile.close();
+}
+
+
+
+nlohmann::json FSManager::scenarioToJsonEXTENDED(const Scenario& scenario) const
+{
+    nlohmann::json j;
+
+    // Додавання основних полів сценарію
+    j["name"] = scenario.getName();
+    j["description"] = scenario.getDescription();
+
+
+    // Додавання кроків сценарію
+    for (const auto& step : scenario.getSteps())
+    {
+        j["steps"].push_back(stepToJson(*step));
+    }
+
+    return j;
+}
+
+std::shared_ptr<Scenario> FSManager::jsonToScenarioEXTENDED(const nlohmann::json& j) const
+{
+    auto scenario = std::make_shared<Scenario>();
+
+    // Отримання основних полів сценарію
+    scenario->setName(j["name"].get<std::string>());
+    scenario->setDescription(j["description"].get<std::string>());
+
+    // Отримання кроків сценарію
+    for (const auto& stepJson : j["steps"])
+    {
+        scenario->addStep(jsonToStep(stepJson));
+    }
+
+    return scenario;
+}

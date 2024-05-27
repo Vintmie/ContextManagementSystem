@@ -1,6 +1,10 @@
 #include "Scenario/Scenario.h"
 #include "FormatOutput.h"
 
+Scenario::Scenario() : name(generateUniqueScenarioName()), description("DefaultDescription") {}
+
+Scenario::Scenario(const std::string& name, const std::string& description) : name(name), description(description) {}
+
 void Scenario::addStep(std::shared_ptr<ScenarioStep> step)
 {
     if (steps.size() == 0) step->setExecutionCondition(ExecutionTypeCondition::UNCONDITIONAL);
@@ -35,4 +39,32 @@ bool Scenario::execute()
         continue;
     }
     return true;
+}
+
+void Scenario::setName(const std::string& name)
+{
+    this->name = name;
+}
+
+std::string Scenario::getName() const
+{
+    return name;
+}
+
+void Scenario::setDescription(const std::string& description)
+{
+    this->description = description;
+}
+
+std::string Scenario::getDescription() const
+{
+    return description;
+}
+
+std::string Scenario::generateUniqueScenarioName() const
+{
+    static std::atomic<int> counter{0};
+    std::ostringstream oss;
+    oss << "scenario_" << counter++;
+    return oss.str();
 }

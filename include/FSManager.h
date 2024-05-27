@@ -12,6 +12,7 @@ public:
     FSManager() {}
     FSManager(const std::string& filePath) : filePath(filePath) {}
 
+
     void saveScenarios(const ScenarioManager& manager) const;
     void saveScenarios(const ScenarioManager& manager, const std::string& path) const;
 
@@ -23,6 +24,14 @@ public:
 
     void saveScenarioDialog(const Scenario& scenario) const;
     void loadScenarioDialog(std::shared_ptr<Scenario>& scenario) const;
+
+
+    // NEW
+    void saveScenarioDetails(const Scenario& scenario, const std::string& filePath) const;
+    void loadScenarioDetails(Scenario& scenario, const std::string& filePath) const;
+    nlohmann::json scenarioToJsonEXTENDED(const Scenario& scenario) const;
+    std::shared_ptr<Scenario> jsonToScenarioEXTENDED(const nlohmann::json& j) const;
+
 
     static std::string generateUniqueFileName();
 
