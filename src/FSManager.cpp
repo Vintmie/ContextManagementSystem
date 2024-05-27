@@ -13,7 +13,7 @@ void FSManager::saveScenarios(const ScenarioManager& manager) const
     nlohmann::json j;
     for (const auto& scenario : manager.getScenarios())
     {
-        j.push_back(scenarioToJson(*scenario));
+        j.push_back(scenarioToJsonEXTENDED(*scenario));
     }
     std::ofstream outFile(filePath);
     outFile << j.dump(4);
@@ -24,11 +24,47 @@ void FSManager::saveScenarios(const ScenarioManager& manager, const std::string&
     nlohmann::json j;
     for (const auto& scenario : manager.getScenarios())
     {
-        j.push_back(scenarioToJson(*scenario));
+        j.push_back(scenarioToJsonEXTENDED(*scenario));
     }
     std::ofstream outFile(path);
     outFile << j.dump(4);
 }
+
+nlohmann::json FSManager::scenarioToJsonEXTENDED(const Scenario& scenario) const
+{
+    nlohmann::json j;
+
+    // Додавання основних полів сценарію
+    j["name"] = scenario.getName();
+    j["description"] = scenario.getDescription();
+
+    // Додавання кроків сценарію
+    for (const auto& step : scenario.getSteps())
+    {
+        j["steps"].push_back(stepToJson(*step));
+    }
+
+    return j;
+}
+
+void FSManager::saveScenario(const Scenario& scenario, const std::string& filePath) const
+{
+    nlohmann::json j;
+    // Додавання основних полів сценарію
+    j = scenarioToJsonEXTENDED(scenario);
+
+    std::ofstream outFile(filePath);
+    if (!outFile.is_open())
+    {
+        std::cerr << "Помилка відкриття файлу для запису сценарію.\n";
+        return;
+    }
+
+    outFile << j.dump(4);
+    outFile.close();
+}
+
+
 
 void FSManager::loadScenarios(ScenarioManager& manager) const
 {
@@ -40,7 +76,7 @@ void FSManager::loadScenarios(ScenarioManager& manager) const
 
     for (const auto& scenarioJson : j)
     {
-        manager.addScenario(jsonToScenario(scenarioJson));
+        manager.addScenario(jsonToScenarioEXTENDED(scenarioJson));
     }
 }
 
@@ -54,7 +90,7 @@ void FSManager::loadScenarios(ScenarioManager& manager, const std::string& path)
 
     for (const auto& scenarioJson : j)
     {
-        manager.addScenario(jsonToScenario(scenarioJson));
+        manager.addScenario(jsonToScenarioEXTENDED(scenarioJson));
     }
 }
 
@@ -67,6 +103,25 @@ nlohmann::json FSManager::scenarioToJson(const Scenario& scenario) const
     }
     return j;
 }
+
+std::shared_ptr<Scenario> FSManager::jsonToScenarioEXTENDED(const nlohmann::json& j) const
+{
+    auto scenario = std::make_shared<Scenario>();
+
+    // Отримання основних полів сценарію
+    scenario->setName(j["name"].get<std::string>());
+    scenario->setDescription(j["description"].get<std::string>());
+
+    // Отримання кроків сценарію
+    for (const auto& stepJson : j["steps"])
+    {
+        scenario->addStep(jsonToStep(stepJson));
+    }
+
+    return scenario;
+}
+
+
 
 std::shared_ptr<Scenario> FSManager::jsonToScenario(const nlohmann::json& j) const
 {
@@ -153,21 +208,7 @@ std::unique_ptr<ITask> FSManager::jsonToTask(const nlohmann::json& j) const
     return nullptr;
 }
 
-void FSManager::saveScenario(const Scenario& scenario, const std::string& filePath) const
-{
-    nlohmann::json j;
-    j["scenario"] = scenarioToJson(scenario);
 
-    std::ofstream outFile(filePath);
-    if (!outFile.is_open())
-    {
-        std::cerr << "Помилка відкриття файлу для запису сценарію.\n";
-        return;
-    }
-
-    outFile << j.dump(4);
-    outFile.close();
-}
 
 void FSManager::loadScenario(std::shared_ptr<Scenario>& scenario, const std::string& filePath) const
 {
@@ -181,7 +222,16 @@ void FSManager::loadScenario(std::shared_ptr<Scenario>& scenario, const std::str
     nlohmann::json j;
     inFile >> j;
 
-    scenario = jsonToScenario(j["scenario"]);
+
+    // Отримання основних полів сценарію
+    scenario->setName(j["name"].get<std::string>());
+    scenario->setDescription(j["description"].get<std::string>());
+
+    // Отримання кроків сценарію
+    for (const auto& stepJson : j["steps"])
+    {
+        scenario->addStep(jsonToStep(stepJson));
+    }
     inFile.close();
 }
 
@@ -199,7 +249,16 @@ void FSManager::saveScenarioDialog(const Scenario& scenario) const
         Utils::SaveFileSelectionDialog(OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу сценарію", L"JSON Files\0*.json\0");
 
     nlohmann::json j;
-    j["scenario"] = scenarioToJson(scenario);
+    // Додавання основних полів сценарію
+    j["name"] = scenario.getName();
+    j["description"] = scenario.getDescription();
+
+    // Додавання кроків сценарію
+    for (const auto& step : scenario.getSteps())
+    {
+        j["steps"].push_back(stepToJson(*step));
+    }
+
 
     std::ofstream outFile(Utils::wstring_to_utf8(filePath));
     if (!outFile.is_open())
@@ -237,7 +296,11 @@ void FSManager::saveScenarioDetails(const Scenario& scenario, const std::string&
     nlohmann::json j;
     j["name"] = scenario.getName();
     j["description"] = scenario.getDescription();
-    j["scenario"] = scenarioToJson(scenario);
+    // Додавання кроків сценарію
+    for (const auto& step : scenario.getSteps())
+    {
+        j["steps"].push_back(stepToJson(*step));
+    }
 
     std::ofstream outFile(filePath);
     if (!outFile.is_open())
@@ -277,37 +340,5 @@ void FSManager::loadScenarioDetails(Scenario& scenario, const std::string& fileP
 
 
 
-nlohmann::json FSManager::scenarioToJsonEXTENDED(const Scenario& scenario) const
-{
-    nlohmann::json j;
-
-    // Додавання основних полів сценарію
-    j["name"] = scenario.getName();
-    j["description"] = scenario.getDescription();
 
 
-    // Додавання кроків сценарію
-    for (const auto& step : scenario.getSteps())
-    {
-        j["steps"].push_back(stepToJson(*step));
-    }
-
-    return j;
-}
-
-std::shared_ptr<Scenario> FSManager::jsonToScenarioEXTENDED(const nlohmann::json& j) const
-{
-    auto scenario = std::make_shared<Scenario>();
-
-    // Отримання основних полів сценарію
-    scenario->setName(j["name"].get<std::string>());
-    scenario->setDescription(j["description"].get<std::string>());
-
-    // Отримання кроків сценарію
-    for (const auto& stepJson : j["steps"])
-    {
-        scenario->addStep(jsonToStep(stepJson));
-    }
-
-    return scenario;
-}
