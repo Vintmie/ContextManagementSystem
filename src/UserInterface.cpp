@@ -8,7 +8,14 @@
 #include <cstdlib>
 #include <limits>
 
-UserInterface::UserInterface() : scenarioManager(std::make_unique<ScenarioManager>()) {}
+UserInterface::UserInterface()
+    : scenarioManager(std::make_unique<ScenarioManager>()), fsManager(std::make_unique<FSManager>()),
+      scenarioUserBuffer(),
+      scenarioFileBuffer()
+{
+}
+
+
 
 void clearScreen()
 {
@@ -28,7 +35,9 @@ void UserInterface::showMainMenu()
         std::cout << "1) Створити новий сценарій\n";
         std::cout << "2) Переглянути створені сценарії\n";
         std::cout << "3) Виконати сценарій\n";
-        std::cout << "4) Вихід з програми\n";
+        std::cout << "4) Завантажити сценарій з файлу\n";
+        std::cout << "5) Переглянути завантажені сценарії\n";
+        std::cout << "6) Вихід з програми\n";
         std::cin >> choice;
 
         clearScreen();  // Очищуємо екран перед виконанням вибраної опції
@@ -38,10 +47,12 @@ void UserInterface::showMainMenu()
             case 1: createScenario(); break;
             case 2: viewScenarios(); break;
             case 3: executeScenario(); break;
-            case 4: exitProgram(); break;
+            case 4: loadScenarioFromFile("D:\\UniversityKeep\\ContextManagementSystem\\.DB\\scenario_0.json"); break;
+            case 5: viewLoadedScenarios(); break;
+            case 6: exitProgram(); break;
             default: std::cout << "Неправильний вибір. Спробуйте ще раз.\n"; break;
         }
-    } while (choice != 4);
+    } while (choice != 6);
 }
 
 std::unique_ptr<IConditional> createUserDefinedCondition(int condChoice)
@@ -136,15 +147,14 @@ void UserInterface::createScenario()
     }
 
     scenarioManager->addScenario(scenario);
-    scenarioBuffer.push_back(scenario);
+    scenarioUserBuffer.push_back(scenario);
 
     char save;
     std::cout << "Пропозиція зберегти сценарій у файл (y/n): ";
     std::cin >> save;
     if (save == 'y')
     {
-        FSManager fsManager(filePath);
-        fsManager.saveScenarios(*scenarioManager);
+        fsManager->saveScenarios(*scenarioManager);
         std::cout << "Сценарії збережено у файл.\n";
     }
 }
@@ -178,7 +188,7 @@ void UserInterface::viewScenarios()
     clearScreen();
     std::cout << "Створені сценарії:\n";
     int index = 1;
-    for (const auto& scenario : scenarioBuffer)
+    for (const auto& scenario : scenarioUserBuffer)
     {
         std::cout << "Сценарій " << index++ << ":\n";
         bool isFirstStep = true;
@@ -209,29 +219,35 @@ void UserInterface::viewScenarios()
 void UserInterface::executeScenario()
 {
     clearScreen();
-    std::cout << "Доступні сценарії для виконання:\n";
-    int index = 1;
-    for (const auto& scenario : scenarioBuffer)
-    {
-        std::cout << index << ") Сценарій " << index++ << "\n";
+    if (scenarioUserBuffer.size() == 0) {
+        std::cout << "Доступних сценаріїв для виконання немає\n";
     }
+    else {
+            std::cout << "Доступні сценарії для виконання:\n";
+            int index = 1;
+            for (const auto& scenario : scenarioUserBuffer)
+            {
+                std::cout << index << ") Сценарій " << index++ << "\n";
+            }
 
-    int choice;
-    std::cout << "Виберіть сценарій для виконання: ";
-    std::cin >> choice;
-    clearScreen();
-    if (choice > 0 && choice <= scenarioBuffer.size())
-    {
-        scenarioBuffer[choice - 1]->execute();
-        std::cout << "Сценарій виконано.\n";
-    }
-    else
-    {
-        std::cout << "Неправильний вибір.\n";
+            int choice;
+            std::cout << "Виберіть сценарій для виконання: ";
+            std::cin >> choice;
+            clearScreen();
+            if (choice > 0 && choice <= scenarioUserBuffer.size())
+            {
+                scenarioUserBuffer[choice - 1]->execute();
+                std::cout << "Сценарій виконано.\n";
+            }
+            else
+            {
+                std::cout << "Неправильний вибір.\n";
+            }
     }
     std::cout << "Натисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
+  
 }
 
 void UserInterface::exitProgram()
@@ -266,4 +282,45 @@ ExecutionTypeCondition UserInterface::selectExecutionTypeCondition() const
         case 3: return ExecutionTypeCondition::UNCONDITIONAL;
         default: std::cout << "Неправильний вибір. Використовується UNCONDITIONAL.\n"; return ExecutionTypeCondition::UNCONDITIONAL;
     }
+}
+
+void UserInterface::loadScenarioFromFile(const std::string& filePath)
+{
+    std::shared_ptr<Scenario> scenario;
+    fsManager->loadScenario(scenario, filePath);
+    scenarioFileBuffer.push_back(scenario);
+
+}
+
+void UserInterface::viewLoadedScenarios()
+{
+    clearScreen();
+    std::cout << "Завантажені сценарії:\n";
+    int index = 1;
+    for (const auto& scenario : scenarioFileBuffer)
+    {
+        std::cout << "Сценарій " << index++ << ":\n";
+        bool isFirstStep = true;
+        for (const auto& step : scenario->getSteps())
+        {
+            std::cout << "- Умова: ";
+            printConditionInfo(step);
+            std::cout << "  Завдання: ";
+            printTaskInfo(step);
+            if (!isFirstStep)
+            {
+                std::cout << "  Умова виконання: ";
+                switch (step->getExecutionCondition())
+                {
+                    case ExecutionTypeCondition::SUCCESS: std::cout << "попередній завершився успішно\n"; break;
+                    case ExecutionTypeCondition::FAILURE: std::cout << "попередній завершився невдало\n"; break;
+                    case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "неважливо\n"; break;
+                }
+            }
+            isFirstStep = false;
+        }
+    }
+    std::cout << "Натисніть Enter для повернення до головного меню...";
+    std::cin.ignore(32767, '\n');
+    std::cin.get();
 }
