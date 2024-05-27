@@ -5,6 +5,7 @@
 #include <string>
 #include "Scenario/ScenarioManager.h"
 #include "FSManager.h"
+#include "Utils.h"
 
 class UserInterface
 {
@@ -20,7 +21,9 @@ private:
     void displayConditionals() const;
     void displayTasks() const;
 
-    void loadScenarioFromFile(const std::string& filePath);  // Доданий метод для завантаження сценаріїв з файлу
+    void saveScenarioToFile(const std::shared_ptr<Scenario>& scenario);
+    void loadScenarioFromFile();  // Доданий метод для завантаження сценаріїв з файлу
+
     void viewLoadedScenarios();
     ExecutionTypeCondition selectExecutionTypeCondition() const;
 
@@ -28,5 +31,4 @@ private:
     std::vector<std::shared_ptr<Scenario>> scenarioUserBuffer;
     std::vector<std::shared_ptr<Scenario>> scenarioFileBuffer;
     std::unique_ptr<FSManager> fsManager;
-
 };

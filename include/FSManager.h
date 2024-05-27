@@ -4,6 +4,7 @@
 #include <memory>
 #include "Scenario/ScenarioManager.h"
 #include "nlohmann/json.hpp"
+#include "Utils.h"
 
 class FSManager
 {
@@ -20,10 +21,13 @@ public:
     void saveScenario(const Scenario& scenario, const std::string& filePath) const;
     void loadScenario(std::shared_ptr<Scenario>& scenario, const std::string& filePath) const;
 
+    void saveScenarioDialog(const Scenario& scenario) const;
+    void loadScenarioDialog(std::shared_ptr<Scenario>& scenario) const;
+
     static std::string generateUniqueFileName();
 
 private:
-    std::string filePath = "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\scenarios.json";
+    std::string filePath = "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\default.json";
     static const std::string path;
 
     nlohmann::json scenarioToJson(const Scenario& scenario) const;

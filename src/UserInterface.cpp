@@ -9,13 +9,10 @@
 #include <limits>
 
 UserInterface::UserInterface()
-    : scenarioManager(std::make_unique<ScenarioManager>()), fsManager(std::make_unique<FSManager>()),
-      scenarioUserBuffer(),
+    : scenarioManager(std::make_unique<ScenarioManager>()), fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(),
       scenarioFileBuffer()
 {
 }
-
-
 
 void clearScreen()
 {
@@ -47,7 +44,7 @@ void UserInterface::showMainMenu()
             case 1: createScenario(); break;
             case 2: viewScenarios(); break;
             case 3: executeScenario(); break;
-            case 4: loadScenarioFromFile("D:\\UniversityKeep\\ContextManagementSystem\\.DB\\scenario_0.json"); break;
+            case 4: loadScenarioFromFile(); break;
             case 5: viewLoadedScenarios(); break;
             case 6: exitProgram(); break;
             default: std::cout << "Неправильний вибір. Спробуйте ще раз.\n"; break;
@@ -93,6 +90,20 @@ std::unique_ptr<ITask> createUserDefinedTask(int taskChoice)
     {
         std::cout << "Неправильний вибір. Спробуйте ще раз.\n";
         return nullptr;  // або обробка помилки, залежно від потреб
+    }
+}
+
+void UserInterface::saveScenarioToFile(const std::shared_ptr<Scenario>& scenario)
+{
+    char save;
+    std::cout << "Зберегти сценарій у файл (y/n): ";
+    std::cin >> save;
+    if (save == 'y')
+    {
+        std::wstring filePath = Utils::SaveFileSelectionDialog(
+            OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу сценарію", L"JSON Files\0*.json\0");
+        fsManager->saveScenario(*scenario, Utils::wstring_to_utf8(filePath));
+        std::cout << "Сценарій збережено у файл.\n";
     }
 }
 
@@ -149,14 +160,8 @@ void UserInterface::createScenario()
     scenarioManager->addScenario(scenario);
     scenarioUserBuffer.push_back(scenario);
 
-    char save;
-    std::cout << "Пропозиція зберегти сценарій у файл (y/n): ";
-    std::cin >> save;
-    if (save == 'y')
-    {
-        fsManager->saveScenarios(*scenarioManager);
-        std::cout << "Сценарії збережено у файл.\n";
-    }
+    // Збереження сценарію у файл
+    saveScenarioToFile(scenario);
 }
 
 void printConditionInfo(const std::shared_ptr<ScenarioStep>& step)
@@ -219,35 +224,36 @@ void UserInterface::viewScenarios()
 void UserInterface::executeScenario()
 {
     clearScreen();
-    if (scenarioUserBuffer.size() == 0) {
+    if (scenarioUserBuffer.size() == 0)
+    {
         std::cout << "Доступних сценаріїв для виконання немає\n";
     }
-    else {
-            std::cout << "Доступні сценарії для виконання:\n";
-            int index = 1;
-            for (const auto& scenario : scenarioUserBuffer)
-            {
-                std::cout << index << ") Сценарій " << index++ << "\n";
-            }
+    else
+    {
+        std::cout << "Доступні сценарії для виконання:\n";
+        int index = 1;
+        for (const auto& scenario : scenarioUserBuffer)
+        {
+            std::cout << index << ") Сценарій " << index++ << "\n";
+        }
 
-            int choice;
-            std::cout << "Виберіть сценарій для виконання: ";
-            std::cin >> choice;
-            clearScreen();
-            if (choice > 0 && choice <= scenarioUserBuffer.size())
-            {
-                scenarioUserBuffer[choice - 1]->execute();
-                std::cout << "Сценарій виконано.\n";
-            }
-            else
-            {
-                std::cout << "Неправильний вибір.\n";
-            }
+        int choice;
+        std::cout << "Виберіть сценарій для виконання: ";
+        std::cin >> choice;
+        clearScreen();
+        if (choice > 0 && choice <= scenarioUserBuffer.size())
+        {
+            scenarioUserBuffer[choice - 1]->execute();
+            std::cout << "Сценарій виконано.\n";
+        }
+        else
+        {
+            std::cout << "Неправильний вибір.\n";
+        }
     }
     std::cout << "Натисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
-  
 }
 
 void UserInterface::exitProgram()
@@ -284,12 +290,13 @@ ExecutionTypeCondition UserInterface::selectExecutionTypeCondition() const
     }
 }
 
-void UserInterface::loadScenarioFromFile(const std::string& filePath)
+void UserInterface::loadScenarioFromFile()
 {
+    std::wstring filePath = Utils::OpenFileSelectionDialog(
+        OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, L"Виберіть файл сценарію", L"JSON Files\0*.json\0");
     std::shared_ptr<Scenario> scenario;
-    fsManager->loadScenario(scenario, filePath);
+    fsManager->loadScenario(scenario, Utils::wstring_to_utf8(filePath));
     scenarioFileBuffer.push_back(scenario);
-
 }
 
 void UserInterface::viewLoadedScenarios()

@@ -8,7 +8,7 @@
 
 const std::string FSManager::path = "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\";
 
-    void FSManager::saveScenarios(const ScenarioManager& manager) const
+void FSManager::saveScenarios(const ScenarioManager& manager) const
 {
     nlohmann::json j;
     for (const auto& scenario : manager.getScenarios())
@@ -57,7 +57,6 @@ void FSManager::loadScenarios(ScenarioManager& manager, const std::string& path)
         manager.addScenario(jsonToScenario(scenarioJson));
     }
 }
-
 
 nlohmann::json FSManager::scenarioToJson(const Scenario& scenario) const
 {
@@ -186,11 +185,48 @@ void FSManager::loadScenario(std::shared_ptr<Scenario>& scenario, const std::str
     inFile.close();
 }
 
-
 std::string FSManager::generateUniqueFileName()
 {
     static std::atomic<int> counter{0};
     std::ostringstream oss;
-    oss << path << "scenario_" << counter++ << ".json";  // додавання інкрементованого ідентифікатора до унікального імені файлу
+    oss << path << "scenario_" << counter++ << ".json";
     return oss.str();
+}
+
+void FSManager::saveScenarioDialog(const Scenario& scenario) const
+{
+    std::wstring filePath =
+        Utils::SaveFileSelectionDialog(OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу сценарію", L"JSON Files\0*.json\0");
+
+    nlohmann::json j;
+    j["scenario"] = scenarioToJson(scenario);
+
+    std::ofstream outFile(Utils::wstring_to_utf8(filePath));
+    if (!outFile.is_open())
+    {
+        std::cerr << "Помилка відкриття файлу для запису сценарію.\n";
+        return;
+    }
+
+    outFile << j.dump(4);
+    outFile.close();
+    std::cout << "Сценарій збережено у файл.\n";
+}
+
+void FSManager::loadScenarioDialog(std::shared_ptr<Scenario>& scenario) const
+{
+    std::wstring filePath = Utils::OpenFileSelectionDialog(
+        OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, L"Виберіть файл сценарію", L"JSON Files\0*.json\0");
+    std::ifstream inFile(Utils::wstring_to_utf8(filePath));
+    if (!inFile.is_open())
+    {
+        std::cerr << "Помилка відкриття файлу для завантаження сценарію.\n";
+        return;
+    }
+
+    nlohmann::json j;
+    inFile >> j;
+
+    scenario = jsonToScenario(j["scenario"]);
+    inFile.close();
 }
