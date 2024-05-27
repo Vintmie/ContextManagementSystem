@@ -8,15 +8,23 @@
 class FSManager
 {
 public:
+    FSManager() {}
     FSManager(const std::string& filePath) : filePath(filePath) {}
 
     void saveScenarios(const ScenarioManager& manager) const;
     void saveScenarios(const ScenarioManager& manager, const std::string& path) const;
+
     void loadScenarios(ScenarioManager& manager) const;
     void loadScenarios(ScenarioManager& manager, const std::string& path) const;
 
+    void saveScenario(const Scenario& scenario, const std::string& filePath) const;
+    void loadScenario(std::shared_ptr<Scenario>& scenario, const std::string& filePath) const;
+
+    static std::string generateUniqueFileName();
+
 private:
-    std::string filePath;
+    std::string filePath = "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\scenarios.json";
+    static const std::string path;
 
     nlohmann::json scenarioToJson(const Scenario& scenario) const;
     nlohmann::json stepToJson(const ScenarioStep& step) const;

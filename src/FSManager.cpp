@@ -6,7 +6,9 @@
 #include "Task/ChangePowerPlanTask.h"
 #include <fstream>
 
-void FSManager::saveScenarios(const ScenarioManager& manager) const
+const std::string FSManager::path = "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\";
+
+    void FSManager::saveScenarios(const ScenarioManager& manager) const
 {
     nlohmann::json j;
     for (const auto& scenario : manager.getScenarios())
@@ -55,6 +57,7 @@ void FSManager::loadScenarios(ScenarioManager& manager, const std::string& path)
         manager.addScenario(jsonToScenario(scenarioJson));
     }
 }
+
 
 nlohmann::json FSManager::scenarioToJson(const Scenario& scenario) const
 {
@@ -149,4 +152,45 @@ std::unique_ptr<ITask> FSManager::jsonToTask(const nlohmann::json& j) const
         return std::make_unique<ChangePowerPlanTask>();
     }
     return nullptr;
+}
+
+void FSManager::saveScenario(const Scenario& scenario, const std::string& filePath) const
+{
+    nlohmann::json j;
+    j["scenario"] = scenarioToJson(scenario);
+
+    std::ofstream outFile(filePath);
+    if (!outFile.is_open())
+    {
+        std::cerr << "Помилка відкриття файлу для запису сценарію.\n";
+        return;
+    }
+
+    outFile << j.dump(4);
+    outFile.close();
+}
+
+void FSManager::loadScenario(std::shared_ptr<Scenario>& scenario, const std::string& filePath) const
+{
+    std::ifstream inFile(filePath);
+    if (!inFile.is_open())
+    {
+        std::cerr << "Помилка відкриття файлу для завантаження сценарію.\n";
+        return;
+    }
+
+    nlohmann::json j;
+    inFile >> j;
+
+    scenario = jsonToScenario(j["scenario"]);
+    inFile.close();
+}
+
+
+std::string FSManager::generateUniqueFileName()
+{
+    static std::atomic<int> counter{0};
+    std::ostringstream oss;
+    oss << path << "scenario_" << counter++ << ".json";  // додавання інкрементованого ідентифікатора до унікального імені файлу
+    return oss.str();
 }
