@@ -110,7 +110,15 @@ void UserInterface::saveScenarioToFile(const std::shared_ptr<Scenario>& scenario
 void UserInterface::createScenario()
 {
     auto scenario = std::make_shared<Scenario>();
+    std::string name, description;
+    std::cout << "Введіть назву сценарію: ";
+    std::cin.ignore(32767, '\n');
+    std::getline(std::cin, name);
+    std::cout << "Введіть опис сценарію: ";
+    std::getline(std::cin, description);
 
+    scenario->setName(name);
+    scenario->setDescription(description);
     while (true)
     {
         clearScreen();
@@ -196,6 +204,8 @@ void UserInterface::viewScenarios()
     for (const auto& scenario : scenarioUserBuffer)
     {
         std::cout << "Сценарій " << index++ << ":\n";
+        std::cout << "Назва: " << scenario->getName() << "\n";
+        std::cout << "Опис: " << scenario->getDescription() << "\n";
         bool isFirstStep = true;
         for (const auto& step : scenario->getSteps())
         {
@@ -306,13 +316,15 @@ void UserInterface::viewLoadedScenarios()
     int index = 1;
     for (const auto& scenario : scenarioFileBuffer)
     {
-        std::cout << "Сценарій " << index++ << ":\n";
+        std::cout << "Сценарій #" << index++ << ":\n";
+        std::cout << "  Назва: " << scenario->getName() << "\n";
+        std::cout << "  Опис: " << scenario->getDescription() << "\n";
         bool isFirstStep = true;
         for (const auto& step : scenario->getSteps())
         {
-            std::cout << "- Умова: ";
+            std::cout << "      - Умова: ";
             printConditionInfo(step);
-            std::cout << "  Завдання: ";
+            std::cout << "      Завдання: ";
             printTaskInfo(step);
             if (!isFirstStep)
             {

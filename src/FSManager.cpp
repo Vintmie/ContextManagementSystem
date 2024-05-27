@@ -269,6 +269,11 @@ void FSManager::loadScenarioDialog(std::shared_ptr<Scenario>& scenario) const
     nlohmann::json j;
     inFile >> j;
     
+     // Отримання основних полів сценарію
+    scenario->setName(j["name"].get<std::string>());
+    scenario->setDescription(j["description"].get<std::string>());
+
+
     auto scenario1 = std::make_shared<Scenario>();
     for (const auto& stepJson : j["steps"])
     {
