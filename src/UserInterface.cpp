@@ -294,9 +294,9 @@ void UserInterface::loadScenarioFromFile()
 {
     std::wstring filePath = Utils::OpenFileSelectionDialog(
         OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, L"Виберіть файл сценарію", L"JSON Files\0*.json\0");
-    std::shared_ptr<Scenario> scenario;
+    std::shared_ptr<Scenario> scenario = std::make_shared<Scenario>();
     fsManager->loadScenario(scenario, Utils::wstring_to_utf8(filePath));
-    scenarioFileBuffer.push_back(scenario);
+    scenarioFileBuffer.push_back(std::move(scenario));
 }
 
 void UserInterface::viewLoadedScenarios()
