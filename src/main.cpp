@@ -27,6 +27,7 @@
 //    return 0;
 //}
 
+#include "UserInterface.h"
 #include <iostream>
 #include "FSManager.h"
 #include "Scenario/Scenario.h"
@@ -38,6 +39,10 @@
 
 int main()
 {
+
+       UserInterface ui;
+       ui.showMainMenu();
+
     // Створення об'єкту FSManager
     FSManager fsManager;
 
@@ -64,7 +69,7 @@ int main()
 
     //fsManager.saveScenarios(*scenarioManager, "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\blink.json");
 
-   
+  /*
     auto scenarioManagerEX = std::make_unique<ScenarioManager>();
      std::string scenarioName = "Sam";
      std::string scenarioDescription = "This is a hard and interestin";
@@ -78,16 +83,23 @@ int main()
           std::make_unique<MessageBoxTask>(), ExecutionTypeCondition::FAILURE);
 
        scenario1->addStep(step2);
+
       scenarioManagerEX->addScenario(scenario1);
-
-
+       fsManager.saveScenario(*scenario1, "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\qwerty.json");
+         */
     //fsManager.saveScenarios(*scenarioManagerEX, "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\blink1.json");
-    fsManager.saveScenarioDetails(*scenario1, "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\scenarioDET.json");
+    //fsManager.saveScenarioDetails(*scenario1, "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\scenarioDET.json");
     
+    /*
+
     auto scenario2 = std::make_shared<Scenario>();
     //auto scenario23 = std::make_shared<ScenarioManager>();
-    fsManager.loadScenario(scenario2, "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\scenarioDET.json");
+    fsManager.loadScenario(scenario2, "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\23.json");
     scenario2->execute();
+
+    */
+
+
     //fsManager.loadScenarios(*scenario23, "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\blink1.json");
     //scenario23->executeScenarios();
 
