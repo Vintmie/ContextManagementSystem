@@ -1,4 +1,6 @@
 #include "Scenario/ScenarioStep.h"
+#include <thread>
+#include <chrono>
 
 ScenarioStep::ScenarioStep(std::unique_ptr<IConditional> cond, std::unique_ptr<ITask> tsk, ExecutionTypeCondition cnd)
     : condition(std::move(cond)), task(std::move(tsk)), executionCondition(cnd)
@@ -9,6 +11,7 @@ ResultType ScenarioStep::executeTask()
 {
     if (task)
     {
+        std::this_thread::sleep_for(std::chrono::seconds(3));
         return task->execute();
     }
     return ResultType::UNKNOWN;
