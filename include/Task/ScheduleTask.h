@@ -3,17 +3,16 @@
 #include <iostream>
 #include "spdlog/spdlog.h"
 
-
-class ChangePowerPlanTask : public ITask
+class ScheduleTask : public ITask
 {
 public:
-    ChangePowerPlanTask() {}
+    ScheduleTask(){}
     ResultType execute() override;
 
     ResultType getExecutionResult() const override;
 
 private:
-    ResultType changePowerPlan();
-
+    ResultType scheduleTask(std::string futureTime);
+ 
     ResultType currentExecutionResult = ResultType::UNKNOWN;
 };
