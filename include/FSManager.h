@@ -11,7 +11,9 @@ public:
     FSManager(const std::string& filePath) : filePath(filePath) {}
 
     void saveScenarios(const ScenarioManager& manager) const;
+    void saveScenarios(const ScenarioManager& manager, const std::string& path) const;
     void loadScenarios(ScenarioManager& manager) const;
+    void loadScenarios(ScenarioManager& manager, const std::string& path) const;
 
 private:
     std::string filePath;

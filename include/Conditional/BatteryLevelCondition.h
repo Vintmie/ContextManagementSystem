@@ -1,5 +1,6 @@
 #pragma once
 #include "IConditional.h"
+#include <spdlog/spdlog.h>
 
 class BatteryLevelCondition : public IConditional
 {

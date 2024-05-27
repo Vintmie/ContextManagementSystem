@@ -1,5 +1,5 @@
-#include "Scenario/ScenarioStep.h"
 #include "Scenario/Scenario.h"
+#include "FormatOutput.h"
 
 void Scenario::addStep(std::shared_ptr<ScenarioStep> step)
 {
@@ -10,9 +10,10 @@ void Scenario::addStep(std::shared_ptr<ScenarioStep> step)
 bool Scenario::execute()
 {
     ResultType prevResult = ResultType::SUCCESS;
-
+    auto condLogger = LoggerManager::get_unique_logger();
     for (const auto& step : steps)
     {
+        condLogger->info("Current condition: {}\n", step->getExecutionCondition());
         if (step->getExecutionCondition() != ExecutionTypeCondition::UNCONDITIONAL)
         {
             // CHECK PREVIOUS STATE

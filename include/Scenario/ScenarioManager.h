@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 #include "Scenario.h"
 
 class ScenarioManager

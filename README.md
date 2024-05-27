@@ -2,8 +2,9 @@
 
 ## Build steps
 
-```
-cd ContextManagementSystem && mkdir build && cd build 
+```bash
+git clone https://github.com/Vintmie/ContextManagementSystem.git
+cd ContextManagementSystem
 cmake --preset=default
 cmake --build build
 ```
