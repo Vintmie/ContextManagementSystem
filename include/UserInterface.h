@@ -28,7 +28,7 @@ private:
 
     void showRunningScenarios();
 
-
+    void stopSelectedScenario();  // Додаємо оголошення нового методу
 
     void saveScenarioToFile(const std::shared_ptr<ScenarioManager>& scenario);
     void loadScenarioFromFile();

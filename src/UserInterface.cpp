@@ -60,7 +60,7 @@ void UserInterface::showMainMenu()
             case 5: viewLoadedScenarios(); break;
             case 6: startPeriodicExecution(); break;  // New case for starting periodic execution
             case 7: showRunningScenarios(); break;    // New case for starting periodic execution
-            case 8: stopPeriodicExecution(); break;   // New case for stopping periodic execution
+            case 8: stopSelectedScenario(); break;    // New case for stopping periodic execution
             case 9: exitProgram(); break;
             default: std::cout << "Неправильний вибір. Спробуйте ще раз.\n"; break;
         }
@@ -577,6 +577,49 @@ void UserInterface::showRunningScenarios()
         std::cout << "Запущених сценаріїв немає.\n";
     }
     std::cout << "\nНатисніть Enter для повернення до головного меню...";
+    std::cin.ignore(32767, '\n');
+    std::cin.get();
+}
+
+void UserInterface::stopSelectedScenario()
+{
+    if (periodicExecutionThread.joinable())
+    {
+        std::cout << "Запущені сценарії:\n";
+        int index = 1;
+        auto scenarios = scenarioPeriodicManager->getScenarios();
+        for (const auto& scenario : scenarios)
+        {
+            std::cout << index << ") " << scenario->getName();
+            std::cout << ": " << scenario->getDescription() << "\n";
+            ++index;
+        }
+
+        int choice;
+        std::cout << "Виберіть сценарій для зупинки: ";
+        std::cin >> choice;
+
+        if (choice <= 0 || choice > scenarios.size())
+        {
+            std::cout << "Неправильний вибір. Повернення до головного меню.\n";
+            return;
+        }
+
+        auto selectedScenario = scenarios[choice - 1];
+        {
+            std::lock_guard<std::mutex> lk(cv_m);
+            stopPeriodicExecutionFlag = true;
+        }
+        cv.notify_one();
+        periodicExecutionThread.join();
+        scenarioPeriodicManager->removeScenario(selectedScenario);
+        std::cout << "Виконання обраного сценарію зупинено.\n";
+    }
+    else
+    {
+        std::cout << "Запущених сценаріїв немає.\n";
+    }
+    std::cout << "Натисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
 }
