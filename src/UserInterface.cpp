@@ -95,7 +95,7 @@ std::unique_ptr<ITask> createUserDefinedTask(int taskChoice)
     }
 }
 
-void UserInterface::saveScenarioToFile(const std::shared_ptr<Scenario>& scenario)
+void UserInterface::saveScenarioToFile(const std::shared_ptr<ScenarioManager>& scenario)
 {
     char save;
     std::cout << "Зберегти сценарій у файл (y/n): ";
@@ -104,13 +104,14 @@ void UserInterface::saveScenarioToFile(const std::shared_ptr<Scenario>& scenario
     {
         std::wstring filePath = Utils::SaveFileSelectionDialog(
             OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу сценарію", L"JSON Files\0*.json\0");
-        fsManager->saveScenario(*scenario, Utils::wstring_to_utf8(filePath));
+        fsManager->saveScenarios(*scenario, Utils::wstring_to_utf8(filePath));
         std::cout << "Сценарій збережено у файл.\n";
     }
 }
 
 void UserInterface::createScenario()
 {
+    auto scenarioManager = std::make_shared<ScenarioManager>();
     auto scenario = std::make_shared<Scenario>();
     std::string name, description;
     std::cout << "Введіть назву сценарію: ";
@@ -166,12 +167,12 @@ void UserInterface::createScenario()
             break;
         }
     }
-
-    //scenarioManager->addScenario(scenario);
-    scenarioUserBuffer.push_back(scenario);
+    // ЧИ СФОРМУВАТИ ІНШИЙ СЦЕНАРІЙ???
+    scenarioManager->addScenario(scenario);
+    scenarioUserBuffer.push_back(scenarioManager);
 
     // Збереження сценарію у файл
-    saveScenarioToFile(scenario);
+    saveScenarioToFile(scenarioManager);
 }
 
 void printConditionInfo(const std::shared_ptr<ScenarioStep>& step)
@@ -203,32 +204,35 @@ void UserInterface::viewScenarios()
     clearScreen();
     std::cout << "Створені сценарії:\n";
     int index = 1;
-    for (const auto& scenario : scenarioUserBuffer)
+    for (const auto& sm : scenarioUserBuffer)
     {
-        std::cout << "Сценарій " << index++ << ":\n";
-        std::cout << "Назва: " << scenario->getName() << "\n";
-        std::cout << "Опис: " << scenario->getDescription() << "\n";
-        bool isFirstStep = true;
-        for (const auto& step : scenario->getSteps())
+        std::cout << "# " << index++ << ":\n";
+        for (const auto& scenario : sm->getScenarios())
         {
-            std::cout << "- Умова: ";
-            printConditionInfo(step);
-            std::cout << "  Завдання: ";
-            printTaskInfo(step);
-            if (!isFirstStep)
+            std::cout << "\n      Назва: " << scenario->getName() << "\n";
+            std::cout << "      Опис: " << scenario->getDescription() << "\n";
+            bool isFirstStep = true;
+            for (const auto& step : scenario->getSteps())
             {
-                std::cout << "  Умова виконання: ";
-                switch (step->getExecutionCondition())
+                std::cout << "          - Умова: ";
+                printConditionInfo(step);
+                std::cout << "            Завдання: ";
+                printTaskInfo(step);
+                if (!isFirstStep)
                 {
-                    case ExecutionTypeCondition::SUCCESS: std::cout << "попередній завершився успішно\n"; break;
-                    case ExecutionTypeCondition::FAILURE: std::cout << "попередній завершився невдало\n"; break;
-                    case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "неважливо\n"; break;
+                    std::cout << "            Виконується  ";
+                    switch (step->getExecutionCondition())
+                    {
+                        case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
+                        case ExecutionTypeCondition::FAILURE: std::cout << "якщо попередній завершився невдало!\n"; break;
+                        case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "за будь-яких умов!\n"; break;
+                    }
                 }
+                isFirstStep = false;
             }
-            isFirstStep = false;
         }
     }
-    std::cout << "Натисніть Enter для повернення до головного меню...";
+    std::cout << "\nНатисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
 }
@@ -246,21 +250,27 @@ void UserInterface::executeScenario()
         std::vector<std::shared_ptr<Scenario>> uniqueScenarios;
         std::set<std::string> scenarioNames;
 
-        for (const auto& scenario : scenarioUserBuffer)
+        for (const auto& su : scenarioUserBuffer)
         {
-            if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
+            for (const auto& scenario : su->getScenarios())
             {
-                uniqueScenarios.push_back(scenario);
-                scenarioNames.insert(scenario->getName());
+                if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
+                {
+                    uniqueScenarios.push_back(scenario);
+                    scenarioNames.insert(scenario->getName());
+                }
             }
         }
 
-        for (const auto& scenario : scenarioFileBuffer)
+        for (const auto& sf : scenarioFileBuffer)
         {
-            if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
+            for (const auto& scenario : sf->getScenarios())
             {
-                uniqueScenarios.push_back(scenario);
-                scenarioNames.insert(scenario->getName());
+                if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
+                {
+                    uniqueScenarios.push_back(scenario);
+                    scenarioNames.insert(scenario->getName());
+                }
             }
         }
 
@@ -336,10 +346,13 @@ void UserInterface::executeScenario()
                     std::this_thread::sleep_for(std::chrono::seconds(3));
                     clearScreen();
                 }
-
+                else
+                {
+                    std::this_thread::sleep_for(std::chrono::seconds(3));
+                    clearScreen();
+                }
                 // Виконання сценаріїв
                 scenarioManager->executeScenarios();
-                std::cout << "Вибрані сценарії виконано.\n";
             }
             else
             {
@@ -395,8 +408,8 @@ void UserInterface::loadScenarioFromFile()
 {
     std::wstring filePath = Utils::OpenFileSelectionDialog(
         OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, L"Виберіть файл сценарію", L"JSON Files\0*.json\0");
-    std::shared_ptr<Scenario> scenario = std::make_shared<Scenario>();
-    fsManager->loadScenario(scenario, Utils::wstring_to_utf8(filePath));
+    std::shared_ptr<ScenarioManager> scenario = std::make_shared<ScenarioManager>();
+    fsManager->loadScenarios(*scenario, Utils::wstring_to_utf8(filePath));
     scenarioFileBuffer.push_back(std::move(scenario));
 }
 
@@ -405,32 +418,35 @@ void UserInterface::viewLoadedScenarios()
     clearScreen();
     std::cout << "Завантажені сценарії:\n";
     int index = 1;
-    for (const auto& scenario : scenarioFileBuffer)
+    for (const auto& sm : scenarioFileBuffer)
     {
-        std::cout << "Сценарій #" << index++ << ":\n";
-        std::cout << "  Назва: " << scenario->getName() << "\n";
-        std::cout << "  Опис: " << scenario->getDescription() << "\n";
-        bool isFirstStep = true;
-        for (const auto& step : scenario->getSteps())
+        std::cout << "# " << index++ << ":\n";
+        for (const auto& scenario : sm->getScenarios())
         {
-            std::cout << "      - Умова: ";
-            printConditionInfo(step);
-            std::cout << "      Завдання: ";
-            printTaskInfo(step);
-            if (!isFirstStep)
+            std::cout << "\n      Назва: " << scenario->getName() << "\n";
+            std::cout << "      Опис: " << scenario->getDescription() << "\n";
+            bool isFirstStep = true;
+            for (const auto& step : scenario->getSteps())
             {
-                std::cout << "  Умова виконання: ";
-                switch (step->getExecutionCondition())
+                std::cout << "          - Умова: ";
+                printConditionInfo(step);
+                std::cout << "            Завдання: ";
+                printTaskInfo(step);
+                if (!isFirstStep)
                 {
-                    case ExecutionTypeCondition::SUCCESS: std::cout << "попередній завершився успішно\n"; break;
-                    case ExecutionTypeCondition::FAILURE: std::cout << "попередній завершився невдало\n"; break;
-                    case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "неважливо\n"; break;
+                    std::cout << "            Виконується  ";
+                    switch (step->getExecutionCondition())
+                    {
+                        case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
+                        case ExecutionTypeCondition::FAILURE: std::cout << "якщо попередній завершився невдало!\n"; break;
+                        case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "за будь-яких умов!\n"; break;
+                    }
                 }
+                isFirstStep = false;
             }
-            isFirstStep = false;
         }
     }
-    std::cout << "Натисніть Enter для повернення до головного меню...";
+    std::cout << "\nНатисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
 }
