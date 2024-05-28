@@ -54,8 +54,10 @@ class LoggerManager
 public:
     static std::shared_ptr<spdlog::logger> get_unique_logger();
     static void initializeFile();
-    static std::shared_ptr<spdlog::logger>& getFileLogger() { return file_logger; }
+    static void initializeRegularFile();
+    static std::shared_ptr<spdlog::logger>& getFileLogger(bool isNotRegular = true);
 
 private:
     static std::shared_ptr<spdlog::logger> file_logger;
+    static std::shared_ptr<spdlog::logger> regular_file_logger;
 };

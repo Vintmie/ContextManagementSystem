@@ -14,10 +14,13 @@
 #include <functional>
 
 UserInterface::UserInterface()
-    : scenarioManager(std::make_unique<ScenarioManager>()), fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(),
+    : scenarioManager(std::make_unique<ScenarioManager>()),
+      scenarioPeriodicManager(std::make_unique<ScenarioManager>()),
+      fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(),
       scenarioFileBuffer(), stopPeriodicExecutionFlag(false)
 {
     LoggerManager::initializeFile();
+    LoggerManager::initializeRegularFile();
 }
 
 void clearScreen()
@@ -41,8 +44,9 @@ void UserInterface::showMainMenu()
         std::cout << "4) Завантажити сценарій з файлу\n";
         std::cout << "5) Переглянути завантажені сценарії\n";
         std::cout << "6) Виконувати сценарій кожну хвилину\n";  // New menu option
-        std::cout << "7) Зупинити виконання сценарію\n";        // New menu option
-        std::cout << "8) Вихід з програми\n";
+        std::cout << "7) Переглянути запущені сценарії\n";      // New menu option
+        std::cout << "8) Зупинити виконання сценарію\n";        // New menu option
+        std::cout << "9) Вихід з програми\n";
         std::cin >> choice;
 
         clearScreen();
@@ -55,11 +59,12 @@ void UserInterface::showMainMenu()
             case 4: loadScenarioFromFile(); break;
             case 5: viewLoadedScenarios(); break;
             case 6: startPeriodicExecution(); break;  // New case for starting periodic execution
-            case 7: stopPeriodicExecution(); break;   // New case for stopping periodic execution
-            case 8: exitProgram(); break;
+            case 7: showRunningScenarios(); break;    // New case for starting periodic execution
+            case 8: stopPeriodicExecution(); break;   // New case for stopping periodic execution
+            case 9: exitProgram(); break;
             default: std::cout << "Неправильний вибір. Спробуйте ще раз.\n"; break;
         }
-    } while (choice != 8);
+    } while (choice != 9);
 }
 
 void UserInterface::startPeriodicExecution()
@@ -120,7 +125,7 @@ void UserInterface::startPeriodicExecution()
     }
 
     auto selectedScenario = uniqueScenarios[choice - 1];
-    scenarioManager->addScenario(selectedScenario);
+    scenarioPeriodicManager->addScenario(selectedScenario);
 
     stopPeriodicExecutionFlag = false;
     periodicExecutionThread = std::thread(
@@ -326,17 +331,17 @@ void UserInterface::viewScenarios()
         for (const auto& scenario : sm->getScenarios())
         {
             std::cout << "\n      Назва: " << scenario->getName() << "\n";
-            std::cout << "      Опис: " << scenario->getDescription() << "\n";
+            std::cout << "      Опис : " << scenario->getDescription() << "\n";
             bool isFirstStep = true;
             for (const auto& step : scenario->getSteps())
             {
-                std::cout << "          - Умова: ";
+                std::cout << "           - Умова: ";
                 printConditionInfo(step);
-                std::cout << "            Завдання: ";
+                std::cout << "             Завдання: ";
                 printTaskInfo(step);
                 if (!isFirstStep)
                 {
-                    std::cout << "            Виконується  ";
+                    std::cout << "            Виконується ";
                     switch (step->getExecutionCondition())
                     {
                         case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
@@ -395,9 +400,34 @@ void UserInterface::executeScenario()
         int index = 1;
         for (const auto& scenario : uniqueScenarios)
         {
-            std::cout << index << ") " << scenario->getName() << "";
-            std::cout << ": " << scenario->getDescription() << "\n";
-            ++index;
+            int index = 1;
+            for (const auto& scenario : uniqueScenarios)
+            {
+                std::cout << index << ") " << scenario->getName();
+                std::cout << ": " << scenario->getDescription() << "\n";
+                std::cout << "\n      Назва: " << scenario->getName() << "\n";
+                std::cout << "      Опис : " << scenario->getDescription() << "\n";
+                bool isFirstStep = true;
+                for (const auto& step : scenario->getSteps())
+                {
+                    std::cout << "           - Умова: ";
+                    printConditionInfo(step);
+                    std::cout << "             Завдання: ";
+                    printTaskInfo(step);
+                    if (!isFirstStep)
+                    {
+                        std::cout << "            Виконується ";
+                        switch (step->getExecutionCondition())
+                        {
+                            case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
+                            case ExecutionTypeCondition::FAILURE: std::cout << "якщо попередній завершився невдало!\n"; break;
+                            case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "за будь-яких умов!\n"; break;
+                        }
+                    }
+                    isFirstStep = false;
+                }
+                ++index;
+            }
         }
 
         char start;
@@ -410,13 +440,33 @@ void UserInterface::executeScenario()
         else if (start == 'y')
         {
             clearScreen();
-            // Показ списку сценаріїв для виконання
             std::cout << "Доступні сценарії для виконання:\n";
             int index = 1;
             for (const auto& scenario : uniqueScenarios)
             {
                 std::cout << index << ") " << scenario->getName();
                 std::cout << ": " << scenario->getDescription() << "\n";
+                std::cout << "\n      Назва: " << scenario->getName() << "\n";
+                std::cout << "      Опис : " << scenario->getDescription() << "\n";
+                bool isFirstStep = true;
+                for (const auto& step : scenario->getSteps())
+                {
+                    std::cout << "           - Умова: ";
+                    printConditionInfo(step);
+                    std::cout << "             Завдання: ";
+                    printTaskInfo(step);
+                    if (!isFirstStep)
+                    {
+                        std::cout << "            Виконується ";
+                        switch (step->getExecutionCondition())
+                        {
+                            case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
+                            case ExecutionTypeCondition::FAILURE: std::cout << "якщо попередній завершився невдало!\n"; break;
+                            case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "за будь-яких умов!\n"; break;
+                        }
+                    }
+                    isFirstStep = false;
+                }
                 ++index;
             }
             std::vector<int> choices;
@@ -502,6 +552,29 @@ void UserInterface::displayTasks() const
     std::cout << "3) ScheduleTask\n";
 }
 
+void UserInterface::showRunningScenarios()
+{
+    // Перевірка, чи є запущені сценарії
+    if (periodicExecutionThread.joinable())
+    {   
+        std::cout << "Запущені сценарії:\n";
+        int index = 1;
+        for (const auto& scenario : scenarioPeriodicManager->getScenarios())
+        {
+            std::cout << index << ") " << scenario->getName();
+            std::cout << ": " << scenario->getDescription() << "\n";
+            ++index;
+        }
+    }
+    else
+    {
+        std::cout << "Запущених сценаріїв немає.\n";
+    }
+    std::cout << "\nНатисніть Enter для повернення до головного меню...";
+    std::cin.ignore(32767, '\n');
+    std::cin.get();
+}
+
 ExecutionTypeCondition UserInterface::selectExecutionTypeCondition() const
 {
     std::cout << "1) SUCCESS\n";
@@ -539,17 +612,17 @@ void UserInterface::viewLoadedScenarios()
         for (const auto& scenario : sm->getScenarios())
         {
             std::cout << "\n      Назва: " << scenario->getName() << "\n";
-            std::cout << "      Опис: " << scenario->getDescription() << "\n";
+            std::cout << "      Опис : " << scenario->getDescription() << "\n";
             bool isFirstStep = true;
             for (const auto& step : scenario->getSteps())
             {
-                std::cout << "          - Умова: ";
+                std::cout << "           - Умова: ";
                 printConditionInfo(step);
-                std::cout << "            Завдання: ";
+                std::cout << "             Завдання: ";
                 printTaskInfo(step);
                 if (!isFirstStep)
                 {
-                    std::cout << "            Виконується  ";
+                    std::cout << "            Виконується ";
                     switch (step->getExecutionCondition())
                     {
                         case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
