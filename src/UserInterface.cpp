@@ -127,14 +127,15 @@ void UserInterface::startPeriodicExecution()
     auto selectedScenario = uniqueScenarios[choice - 1];
     scenarioPeriodicManager->addScenario(selectedScenario);
 
-    stopPeriodicExecutionFlag = false;
+stopPeriodicExecutionFlag = false;
     periodicExecutionThread = std::thread(
         [this, selectedScenario]()
         {
+            std::unique_lock<std::mutex> lk(cv_m);
             while (!stopPeriodicExecutionFlag)
             {
                 selectedScenario->execute(false);
-                std::this_thread::sleep_for(std::chrono::minutes(1));
+                if (cv.wait_for(lk, std::chrono::minutes(1), [this] { return stopPeriodicExecutionFlag.load(); })) break;
             }
         });
 
@@ -148,7 +149,11 @@ void UserInterface::stopPeriodicExecution()
 {
     if (periodicExecutionThread.joinable())
     {
-        stopPeriodicExecutionFlag = true;
+        {
+            std::lock_guard<std::mutex> lk(cv_m);
+            stopPeriodicExecutionFlag = true;
+        }
+        cv.notify_one();
         periodicExecutionThread.join();
         std::cout << "Виконання сценарію зупинено.\n";
     }
@@ -536,6 +541,7 @@ void UserInterface::executeScenario()
 
 void UserInterface::exitProgram()
 {
+    stopPeriodicExecution();
     std::cout << "Програма завершена.\n";
 }
 
