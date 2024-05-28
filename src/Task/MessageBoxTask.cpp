@@ -17,8 +17,10 @@ ResultType MessageBoxTask::getMessageBox()
     if (MessageBoxW(NULL, L"Hello from MessageBox!", L"Message", MB_OK | MB_ICONINFORMATION))
     {
         auto res_logger = LoggerManager::get_unique_logger();
+        auto file_logger = LoggerManager::getFileLogger();
         currentExecutionResult = ResultType::SUCCESS;
         res_logger->info("MessageBoxTask returned: {}\n", currentExecutionResult);
+        file_logger->info("MessageBoxTask returned: {}\n", currentExecutionResult);
         return currentExecutionResult;
     }
     return currentExecutionResult;

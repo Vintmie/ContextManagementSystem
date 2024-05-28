@@ -24,11 +24,14 @@ void ScenarioManager::executeScenarios()
     auto res_logger = LoggerManager::get_unique_logger();
     for (const auto& scenario : scenarios)
     {
+
+        auto file_logger = LoggerManager::getFileLogger();
         //res_logger->info("======= Scenario {} start\n", scenario->getName());
         spdlog::info("======= Scenario {} start\n", scenario->getName());
+        file_logger->info("======= Scenario {} start\n", scenario->getName());
         scenario->execute();
         spdlog::info("Scenario {} end =======\n", scenario->getName());
-        //res_logger->info("Scenario {} end =======\n", scenario->getName());
+        file_logger->info("Scenario {} end =======\n", scenario->getName());
     }
 }
 

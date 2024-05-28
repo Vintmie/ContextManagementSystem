@@ -107,7 +107,7 @@ ResultType ChangePowerPlanTask::getExecutionResult() const
 ResultType ChangePowerPlanTask::changePowerPlan()
 {
     auto res_logger = LoggerManager::get_unique_logger();
-
+    auto file_logger = LoggerManager::getFileLogger();
     // std::cout << "Available Power Plans:" << std::endl;
     std::vector<std::wstring> powerPlans = GetAvailablePowerPlans();
 
@@ -136,8 +136,10 @@ ResultType ChangePowerPlanTask::changePowerPlan()
             {
                 //std::wcout << L"Power plan changed successfully to: " << planName << std::endl;
                 res_logger->info("Power plan changed successfully to: {}\n", Utils::wstring_to_utf8(planName));
+                file_logger->info("Power plan changed successfully to: {}\n", Utils::wstring_to_utf8(planName));
                 currentExecutionResult = ResultType::SUCCESS;
                 res_logger->info("ChangePowerPlanTask returned: {}\n", currentExecutionResult);
+                file_logger->info("ChangePowerPlanTask returned: {}\n", currentExecutionResult);
             }
             else
             {
