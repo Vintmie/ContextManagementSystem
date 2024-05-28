@@ -6,12 +6,12 @@ class MessageBoxTask : public ITask
 {
 public:
     MessageBoxTask() {}
-    ResultType execute() override;
+    ResultType execute(bool isLog = true) override;
 
     ResultType getExecutionResult() const override;
 
 private:
-    ResultType getMessageBox();
+    ResultType getMessageBox(bool isLog);
 
     ResultType currentExecutionResult = ResultType::UNKNOWN;
 };

@@ -94,9 +94,9 @@ bool SetPowerPlan(const std::wstring& planName)
     return (result == 0);  // 0 indicates success
 }
 
-ResultType ChangePowerPlanTask::execute()
+ResultType ChangePowerPlanTask::execute(bool isLog)
 {
-    return changePowerPlan();
+    return changePowerPlan(isLog);
 }
 
 ResultType ChangePowerPlanTask::getExecutionResult() const
@@ -104,7 +104,7 @@ ResultType ChangePowerPlanTask::getExecutionResult() const
     return currentExecutionResult;
 }
 
-ResultType ChangePowerPlanTask::changePowerPlan()
+ResultType ChangePowerPlanTask::changePowerPlan(bool isLog)
 {
     auto res_logger = LoggerManager::get_unique_logger();
     auto file_logger = LoggerManager::getFileLogger();
@@ -135,10 +135,15 @@ ResultType ChangePowerPlanTask::changePowerPlan()
             if (SetPowerPlan(planGuid))
             {
                 // std::wcout << L"Power plan changed successfully to: " << planName << std::endl;
-                res_logger->info("Power plan changed successfully to: {}\n", Utils::wstring_to_utf8(planName));
+                if (isLog != false)
+                {
+                    res_logger->info("Power plan changed successfully to: {}\n", Utils::wstring_to_utf8(planName));
+                    res_logger->info("ChangePowerPlanTask returned: {}\n", currentExecutionResult);
+
+                }
+                
                 file_logger->info("Power plan changed successfully to: {}\n", Utils::wstring_to_utf8(planName));
                 currentExecutionResult = ResultType::SUCCESS;
-                res_logger->info("ChangePowerPlanTask returned: {}\n", currentExecutionResult);
                 file_logger->info("ChangePowerPlanTask returned: {}\n", currentExecutionResult);
             }
             else

@@ -28,11 +28,11 @@ std::string getFutureTime(int additionalSeconds)
     return std::string(buffer);
 }
 
-ResultType ScheduleTask::execute()
+ResultType ScheduleTask::execute(bool isLog)
 {
 
     std::string futureTime = getFutureTime(startUpTime);
-    return scheduleTask(futureTime);
+    return scheduleTask(futureTime,isLog);
 }
 
 ResultType ScheduleTask::getExecutionResult() const
@@ -40,7 +40,7 @@ ResultType ScheduleTask::getExecutionResult() const
     return currentExecutionResult;
 }
 
-ResultType ScheduleTask::scheduleTask(std::string futureTime)
+ResultType ScheduleTask::scheduleTask(std::string futureTime, bool isLog)
 {
 
     currentExecutionResult = ResultType::FAILURE;
@@ -271,7 +271,10 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     else
     {
         file_logger->info("Task {} scheduled on {}\n", Utils::wstring_to_utf8(startPath), futureTime);
-        res_logger->info("Task {} scheduled on {}\n", Utils::wstring_to_utf8(startPath), futureTime);
+        if (isLog != false)
+        {
+            res_logger->info("Task {} scheduled on {}\n", Utils::wstring_to_utf8(startPath), futureTime);
+        }
         currentExecutionResult = ResultType::SUCCESS;
 
         pRegisteredTask->Release();
@@ -291,6 +294,9 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     CoUninitialize();
 
     file_logger->info("ScheduleTask returned: {}\n", currentExecutionResult);
-    res_logger->info("ScheduleTask returned: {}\n", currentExecutionResult);
+    if (isLog != false)
+    {
+        res_logger->info("ScheduleTask returned: {}\n", currentExecutionResult);
+    }
     return currentExecutionResult;
 }

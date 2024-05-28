@@ -7,23 +7,23 @@ ScenarioStep::ScenarioStep(std::unique_ptr<IConditional> cond, std::unique_ptr<I
 {
 }
 
-ResultType ScenarioStep::executeTask()
+ResultType ScenarioStep::executeTask(bool isLog)
 {
     if (task)
     {
         std::this_thread::sleep_for(std::chrono::seconds(3));
-        return task->execute();
+        return task->execute(isLog);
     }
     return ResultType::UNKNOWN;
 }
 
-bool ScenarioStep::evaluateCondition() const
+bool ScenarioStep::evaluateCondition(bool isLog) const
 {
     if (!condition)
     {
         return false;
     }
-    return condition->evaluate();
+    return condition->evaluate(isLog);
 }
 
 ExecutionTypeCondition ScenarioStep::getExecutionCondition() const

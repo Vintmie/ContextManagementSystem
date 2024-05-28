@@ -11,7 +11,7 @@ public:
     ~ScenarioManager();
     void addScenario(std::shared_ptr<Scenario> scenario);
 
-    void executeScenarios();
+    void executeScenarios(bool isLog = true);
     void clearScenarios();
     const std::vector<std::shared_ptr<Scenario>>& getScenarios() const { return scenarios; }
 

@@ -11,7 +11,7 @@ void Scenario::addStep(std::shared_ptr<ScenarioStep> step)
     steps.push_back(step);
 }
 
-bool Scenario::execute()
+bool Scenario::execute(bool isLog)
 {
     ResultType prevResult = ResultType::SUCCESS;
     auto condLogger = LoggerManager::get_unique_logger();
@@ -20,8 +20,11 @@ bool Scenario::execute()
     for (const auto& step : steps)
     {
         file_logger->info("Step {}\n", stepN);
-        condLogger->info("\033[1;33mStep {}\033[0m", stepN++);
-        condLogger->info("Current condition: {}\n", step->getExecutionCondition());
+        if (isLog != false)
+        {
+            condLogger->info("\033[1;33mStep {}\033[0m", stepN++);
+            condLogger->info("Current condition: {}\n", step->getExecutionCondition());
+        }
         file_logger->info("Current condition: {}\n", step->getExecutionCondition());
         if (step->getExecutionCondition() != ExecutionTypeCondition::UNCONDITIONAL)
         {
@@ -34,9 +37,9 @@ bool Scenario::execute()
                 return false;  // END SCENARIO
             }
         }
-        if (step->evaluateCondition())
+        if (step->evaluateCondition(isLog))
         {
-            step->executeTask();
+            step->executeTask(isLog);
             prevResult = step->getExecutionResult();
         }
         else

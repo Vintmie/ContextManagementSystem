@@ -7,12 +7,12 @@ class ChangePowerPlanTask : public ITask
 {
 public:
     ChangePowerPlanTask() {}
-    ResultType execute() override;
+    ResultType execute(bool isLog = true) override;
 
     ResultType getExecutionResult() const override;
 
 private:
-    ResultType changePowerPlan();
+    ResultType changePowerPlan(bool isLog = true);
 
     ResultType currentExecutionResult = ResultType::UNKNOWN;
 };

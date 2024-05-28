@@ -4,5 +4,5 @@ class IConditional
 {
 public:
     virtual ~IConditional() = default;
-    virtual bool evaluate() const = 0;
+    virtual bool evaluate(bool isLog = true) const = 0;
 };
