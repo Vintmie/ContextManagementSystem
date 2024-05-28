@@ -7,7 +7,7 @@ class BatteryLevelCondition : public IConditional
 public:
     BatteryLevelCondition(int crucialLevel);
 
-    bool evaluate() const override;
+    bool evaluate(bool isLog = true) const override;
 
     int getCrucialLevel() const;
 

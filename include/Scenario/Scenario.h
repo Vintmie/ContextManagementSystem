@@ -12,7 +12,7 @@ public:
 
     void addStep(std::shared_ptr<ScenarioStep> step);
 
-    bool execute();
+    bool execute(bool isLog = true);
 
     const std::vector<std::shared_ptr<ScenarioStep>>& getSteps() const { return steps; }
     void setName(const std::string& name);

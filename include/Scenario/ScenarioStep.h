@@ -16,9 +16,9 @@ public:
     ScenarioStep(
         std::unique_ptr<IConditional> cond, std::unique_ptr<ITask> tsk, ExecutionTypeCondition cnd = ExecutionTypeCondition::UNCONDITIONAL);
 
-    virtual ResultType executeTask();
+    virtual ResultType executeTask(bool isLog = true);
 
-    virtual bool evaluateCondition() const;
+    virtual bool evaluateCondition(bool isLog = true) const;
 
     ExecutionTypeCondition getExecutionCondition() const;
 

@@ -11,6 +11,6 @@ class ITask
 {
 public:
     virtual ~ITask() = default;
-    virtual ResultType execute() = 0;
+    virtual ResultType execute(bool isLog = true) = 0;
     virtual ResultType getExecutionResult() const = 0;
 };

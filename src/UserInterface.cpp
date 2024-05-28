@@ -11,10 +11,11 @@
 #include <set>
 #include <chrono>
 #include "FormatOutput.h"
+#include <functional>
 
 UserInterface::UserInterface()
     : scenarioManager(std::make_unique<ScenarioManager>()), fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(),
-      scenarioFileBuffer()
+      scenarioFileBuffer(), stopPeriodicExecutionFlag(false)
 {
     LoggerManager::initializeFile();
 }
@@ -39,10 +40,12 @@ void UserInterface::showMainMenu()
         std::cout << "3) Менеджер сценаріїв\n";
         std::cout << "4) Завантажити сценарій з файлу\n";
         std::cout << "5) Переглянути завантажені сценарії\n";
-        std::cout << "6) Вихід з програми\n";
+        std::cout << "6) Виконувати сценарій кожну хвилину\n";  // New menu option
+        std::cout << "7) Зупинити виконання сценарію\n";        // New menu option
+        std::cout << "8) Вихід з програми\n";
         std::cin >> choice;
 
-        clearScreen();  // Очищуємо екран перед виконанням вибраної опції
+        clearScreen();
 
         switch (choice)
         {
@@ -51,10 +54,106 @@ void UserInterface::showMainMenu()
             case 3: executeScenario(); break;
             case 4: loadScenarioFromFile(); break;
             case 5: viewLoadedScenarios(); break;
-            case 6: exitProgram(); break;
+            case 6: startPeriodicExecution(); break;  // New case for starting periodic execution
+            case 7: stopPeriodicExecution(); break;   // New case for stopping periodic execution
+            case 8: exitProgram(); break;
             default: std::cout << "Неправильний вибір. Спробуйте ще раз.\n"; break;
         }
-    } while (choice != 6);
+    } while (choice != 8);
+}
+
+void UserInterface::startPeriodicExecution()
+{
+    clearScreen();
+    if (scenarioUserBuffer.empty() && scenarioFileBuffer.empty())
+    {
+        std::cout << "Доступних сценаріїв для виконання немає\n";
+        return;
+    }
+
+    // Об'єднання сценаріїв з уникненням дублікатів за назвою
+    std::vector<std::shared_ptr<Scenario>> uniqueScenarios;
+    std::set<std::string> scenarioNames;
+
+    for (const auto& su : scenarioUserBuffer)
+    {
+        for (const auto& scenario : su->getScenarios())
+        {
+            if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
+            {
+                uniqueScenarios.push_back(scenario);
+                scenarioNames.insert(scenario->getName());
+            }
+        }
+    }
+
+    for (const auto& sf : scenarioFileBuffer)
+    {
+        for (const auto& scenario : sf->getScenarios())
+        {
+            if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
+            {
+                uniqueScenarios.push_back(scenario);
+                scenarioNames.insert(scenario->getName());
+            }
+        }
+    }
+
+    // Показ списку сценаріїв для вибору
+    std::cout << "Доступні сценарії для вибору:\n";
+    int index = 1;
+    for (const auto& scenario : uniqueScenarios)
+    {
+        std::cout << index << ") " << scenario->getName();
+        std::cout << ": " << scenario->getDescription() << "\n";
+        ++index;
+    }
+
+    int choice;
+    std::cout << "Виберіть сценарій для виконання кожну хвилину: ";
+    std::cin >> choice;
+
+    if (choice <= 0 || choice > uniqueScenarios.size())
+    {
+        std::cout << "Неправильний вибір. Повернення до головного меню.\n";
+        return;
+    }
+
+    auto selectedScenario = uniqueScenarios[choice - 1];
+    scenarioManager->addScenario(selectedScenario);
+
+    stopPeriodicExecutionFlag = false;
+    periodicExecutionThread = std::thread(
+        [this, selectedScenario]()
+        {
+            while (!stopPeriodicExecutionFlag)
+            {
+                selectedScenario->execute(false);
+                std::this_thread::sleep_for(std::chrono::minutes(1));
+            }
+        });
+
+    std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожну хвилину.\n";
+    std::cout << "Натисніть Enter для повернення до головного меню...";
+    std::cin.ignore(32767, '\n');
+    std::cin.get();
+}
+
+void UserInterface::stopPeriodicExecution()
+{
+    if (periodicExecutionThread.joinable())
+    {
+        stopPeriodicExecutionFlag = true;
+        periodicExecutionThread.join();
+        std::cout << "Виконання сценарію зупинено.\n";
+    }
+    else
+    {
+        std::cout << "Немає активного виконання сценарію.\n";
+    }
+    std::cout << "Натисніть Enter для повернення до головного меню...";
+    std::cin.ignore(32767, '\n');
+    std::cin.get();
 }
 
 std::unique_ptr<IConditional> createUserDefinedCondition(int condChoice)

@@ -11,6 +11,6 @@ private:
 public:
     TimeCondition(int Uhour);
 
-    bool evaluate() const override;
+    bool evaluate(bool isLog = true) const override;
     int getHour() const;
 };
