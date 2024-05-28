@@ -30,5 +30,3 @@ int BatteryLevelCondition::getBatteryLevel() const
         return -1;  // Error code
     }
 }
-
-

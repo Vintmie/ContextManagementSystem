@@ -12,7 +12,7 @@ public:
     void addScenario(std::shared_ptr<Scenario> scenario);
 
     void executeScenarios();
-
+    void clearScenarios();
     const std::vector<std::shared_ptr<Scenario>>& getScenarios() const { return scenarios; }
 
 private:

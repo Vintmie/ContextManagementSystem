@@ -28,8 +28,6 @@ std::string getFutureTime(int additionalSeconds)
     return std::string(buffer);
 }
 
-
-
 ResultType ScheduleTask::execute()
 {
     // Calculate the future time (e.g., current time + 3600 seconds = 1 hour)
@@ -47,9 +45,9 @@ ResultType ScheduleTask::getExecutionResult() const
 
 ResultType ScheduleTask::scheduleTask(std::string futureTime)
 {
-  
+
     currentExecutionResult = ResultType::FAILURE;
-     // Initialize COM
+    // Initialize COM
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (FAILED(hr))
     {
@@ -291,7 +289,6 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     pRootFolder->Release();
     pService->Release();
     CoUninitialize();
-
 
     return currentExecutionResult;
 }
