@@ -7,6 +7,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <limits>
+#include <set>
+#include <chrono>
 
 UserInterface::UserInterface()
     : scenarioManager(std::make_unique<ScenarioManager>()), fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(),
@@ -165,7 +167,7 @@ void UserInterface::createScenario()
         }
     }
 
-    scenarioManager->addScenario(scenario);
+    //scenarioManager->addScenario(scenario);
     scenarioUserBuffer.push_back(scenario);
 
     // Збереження сценарію у файл
@@ -234,37 +236,126 @@ void UserInterface::viewScenarios()
 void UserInterface::executeScenario()
 {
     clearScreen();
-    if (scenarioUserBuffer.size() == 0)
+    if (scenarioUserBuffer.empty() && scenarioFileBuffer.empty())
     {
         std::cout << "Доступних сценаріїв для виконання немає\n";
     }
     else
     {
-        std::cout << "Доступні сценарії для виконання:\n";
-        int index = 1;
+        // Об'єднання сценаріїв з уникненням дублікатів за назвою
+        std::vector<std::shared_ptr<Scenario>> uniqueScenarios;
+        std::set<std::string> scenarioNames;
+
         for (const auto& scenario : scenarioUserBuffer)
         {
-            std::cout << index << ") Сценарій " << index++ << "\n";
+            if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
+            {
+                uniqueScenarios.push_back(scenario);
+                scenarioNames.insert(scenario->getName());
+            }
         }
 
-        int choice;
-        std::cout << "Виберіть сценарій для виконання: ";
-        std::cin >> choice;
-        clearScreen();
-        if (choice > 0 && choice <= scenarioUserBuffer.size())
+        for (const auto& scenario : scenarioFileBuffer)
         {
-            scenarioUserBuffer[choice - 1]->execute();
-            std::cout << "Сценарій виконано.\n";
+            if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
+            {
+                uniqueScenarios.push_back(scenario);
+                scenarioNames.insert(scenario->getName());
+            }
         }
-        else
+
+        // Показ списку сценаріїв для виконання
+        std::cout << "Доступні сценарії для виконання:\n";
+        int index = 1;
+        for (const auto& scenario : uniqueScenarios)
         {
-            std::cout << "Неправильний вибір.\n";
+            std::cout << index << ") " << scenario->getName() << "\n";
+            ++index;
         }
+        
+        char start;
+        std::cout << "Почати формування сценаріїв для виконання? (y/n): ";
+        std::cin >> start;
+        if (start != 'y')
+        {
+            return;
+        }
+        else if (start == 'y')
+        {
+            clearScreen();
+            // Показ списку сценаріїв для виконання
+            std::cout << "Доступні сценарії для виконання:\n";
+            int index = 1;
+            for (const auto& scenario : uniqueScenarios)
+            {
+                std::cout << index << ") " << scenario->getName() << "\n";
+                ++index;
+            }
+            std::vector<int> choices;
+            int choice;
+
+            std::cout << "\n\nВиберіть сценарії для виконання (введіть 0 для завершення вибору):\n";
+            while (true)
+            {
+                std::cout << "Введіть номер сценарію: ";
+                std::cin >> choice;
+                if (choice == 0)
+                {
+                    break;
+                }
+                else if (choice > 0 && choice <= uniqueScenarios.size())
+                {
+                    choices.push_back(choice);
+                }
+                else
+                {
+                    std::cout << "Неправильний вибір. Спробуйте ще раз.\n";
+                }
+            }
+
+            clearScreen();
+            if (!choices.empty())
+            {
+                for (int ch : choices)
+                {
+                    scenarioManager->addScenario(uniqueScenarios[ch - 1]);
+                }
+
+                // Запит на збереження сценаріїв у файл
+                char save;
+                std::cout << "Зберегти сценарій(ї) у файл перед виконанням? (y/n): ";
+                std::cin >> save;
+                if (save == 'y')
+                {
+
+                    std::wstring filePath = Utils::SaveFileSelectionDialog(
+                        OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу сценарію", L"JSON Files\0*.json\0");
+                    // fsManager->saveScenario(*uniqueScenarios[ch - 1], Utils::wstring_to_utf8(filePath));
+                    fsManager->saveScenarios(*scenarioManager, Utils::wstring_to_utf8(filePath));
+                    std::cout << "Сценарій(ї) збережено у файл.\n";
+                    std::this_thread::sleep_for(std::chrono::seconds(3));
+                    clearScreen();
+                }
+
+                // Виконання сценаріїв
+                scenarioManager->executeScenarios();
+                std::cout << "Вибрані сценарії виконано.\n";
+            }
+            else
+            {
+                std::cout << "Немає вибраних сценаріїв для виконання.\n";
+            }
+        
+        }
+        
     }
+    scenarioManager->clearScenarios();
     std::cout << "Натисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
 }
+
+
 
 void UserInterface::exitProgram()
 {

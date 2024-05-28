@@ -6,13 +6,13 @@
 class ScheduleTask : public ITask
 {
 public:
-    ScheduleTask(){}
+    ScheduleTask() {}
     ResultType execute() override;
 
     ResultType getExecutionResult() const override;
 
 private:
     ResultType scheduleTask(std::string futureTime);
- 
+
     ResultType currentExecutionResult = ResultType::UNKNOWN;
 };

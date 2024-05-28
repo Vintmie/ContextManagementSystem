@@ -3,7 +3,6 @@
 #include <iostream>
 #include "spdlog/spdlog.h"
 
-
 class ChangePowerPlanTask : public ITask
 {
 public:

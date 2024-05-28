@@ -85,14 +85,13 @@ bool SetPowerPlan(const std::wstring& planName)
     std::wstring command = L"powercfg.exe /s \"" + planGuid + L"\"";
 
     // Print the command for manual execution
-    //std::wcout << "Command to manually execute: " << command << std::endl;
+    // std::wcout << "Command to manually execute: " << command << std::endl;
 
     // Execute the command using system() function
     int result = _wsystem(command.c_str());
 
     return (result == 0);  // 0 indicates success
 }
-
 
 ResultType ChangePowerPlanTask::execute()
 {
@@ -108,7 +107,7 @@ ResultType ChangePowerPlanTask::changePowerPlan()
 {
     auto res_logger = LoggerManager::get_unique_logger();
 
-    //std::cout << "Available Power Plans:" << std::endl;
+    // std::cout << "Available Power Plans:" << std::endl;
     std::vector<std::wstring> powerPlans = GetAvailablePowerPlans();
 
     /*
@@ -119,10 +118,10 @@ ResultType ChangePowerPlanTask::changePowerPlan()
     */
 
     // Prompt the user to select a power plan by number
-    //std::cout << "\nEnter the number of the power plan you want to select: ";
+    // std::cout << "\nEnter the number of the power plan you want to select: ";
 
     int selection = 1;
-    //std::cin >> selection;
+    // std::cin >> selection;
 
     if (selection > 0 && selection <= powerPlans.size())
     {
@@ -131,7 +130,7 @@ ResultType ChangePowerPlanTask::changePowerPlan()
         std::wstring planGuid = GetPowerPlanGuid(planName);
         if (!planGuid.empty())
         {
-            //std::wcout << "GUID for selected power plan: " << planGuid << std::endl;
+            // std::wcout << "GUID for selected power plan: " << planGuid << std::endl;
             if (SetPowerPlan(planGuid))
             {
                 std::wcout << L"Power plan changed successfully to: " << planName << std::endl;

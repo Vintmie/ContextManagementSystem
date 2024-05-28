@@ -64,8 +64,6 @@ void FSManager::saveScenario(const Scenario& scenario, const std::string& filePa
     outFile.close();
 }
 
-
-
 void FSManager::loadScenarios(ScenarioManager& manager) const
 {
     std::ifstream inFile(filePath);
@@ -94,7 +92,6 @@ void FSManager::loadScenarios(ScenarioManager& manager, const std::string& path)
     }
 }
 
-
 std::shared_ptr<Scenario> FSManager::jsonToScenarioEXTENDED(const nlohmann::json& j) const
 {
     auto scenario = std::make_shared<Scenario>();
@@ -111,10 +108,6 @@ std::shared_ptr<Scenario> FSManager::jsonToScenarioEXTENDED(const nlohmann::json
 
     return scenario;
 }
-
-
-
-
 
 nlohmann::json FSManager::stepToJson(const ScenarioStep& step) const
 {
@@ -191,8 +184,6 @@ std::unique_ptr<ITask> FSManager::jsonToTask(const nlohmann::json& j) const
     return nullptr;
 }
 
-
-
 void FSManager::loadScenario(std::shared_ptr<Scenario>& scenario, const std::string& filePath) const
 {
     std::ifstream inFile(filePath);
@@ -204,7 +195,6 @@ void FSManager::loadScenario(std::shared_ptr<Scenario>& scenario, const std::str
 
     nlohmann::json j;
     inFile >> j;
-
 
     // Отримання основних полів сценарію
     scenario->setName(j["name"].get<std::string>());
@@ -242,7 +232,6 @@ void FSManager::saveScenarioDialog(const Scenario& scenario) const
         j["steps"].push_back(stepToJson(*step));
     }
 
-
     std::ofstream outFile(Utils::wstring_to_utf8(filePath));
     if (!outFile.is_open())
     {
@@ -268,11 +257,10 @@ void FSManager::loadScenarioDialog(std::shared_ptr<Scenario>& scenario) const
 
     nlohmann::json j;
     inFile >> j;
-    
-     // Отримання основних полів сценарію
+
+    // Отримання основних полів сценарію
     scenario->setName(j["name"].get<std::string>());
     scenario->setDescription(j["description"].get<std::string>());
-
 
     auto scenario1 = std::make_shared<Scenario>();
     for (const auto& stepJson : j["steps"])
@@ -283,7 +271,6 @@ void FSManager::loadScenarioDialog(std::shared_ptr<Scenario>& scenario) const
     scenario = scenario1;
     inFile.close();
 }
-
 
 void FSManager::saveScenarioDetails(const Scenario& scenario, const std::string& filePath) const
 {
@@ -332,8 +319,6 @@ void FSManager::loadScenarioDetails(Scenario& scenario, const std::string& fileP
     inFile.close();
 }
 
-
-
 // std::shared_ptr<Scenario> FSManager::jsonToScenario(const nlohmann::json& j) const
 //{
 //     auto scenario = std::make_shared<Scenario>();
@@ -343,7 +328,6 @@ void FSManager::loadScenarioDetails(Scenario& scenario, const std::string& fileP
 //     }
 //     return scenario;
 // }
-
 
 // nlohmann::json FSManager::scenarioToJson(const Scenario& scenario) const
 //{

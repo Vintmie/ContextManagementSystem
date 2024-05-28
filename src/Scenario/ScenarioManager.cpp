@@ -27,3 +27,8 @@ void ScenarioManager::executeScenarios()
         spdlog::info("Scenario end! ======= ");
     }
 }
+
+void ScenarioManager::clearScenarios()
+{
+    scenarios.clear();
+}
