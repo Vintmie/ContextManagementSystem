@@ -8,6 +8,7 @@
 #include "Utils.h"
 #include <thread>
 #include <atomic>
+#include <condition_variable>
 
 class UserInterface
 {
@@ -40,6 +41,10 @@ private:
     std::vector<std::shared_ptr<ScenarioManager>> scenarioUserBuffer;
     std::vector<std::shared_ptr<ScenarioManager>> scenarioFileBuffer;
     
+
+
+    std::condition_variable cv;
+    std::mutex cv_m;
     std::thread periodicExecutionThread; // Thread for periodic execution
     std::atomic<bool> stopPeriodicExecutionFlag; // Flag to stop the periodic execution
 };
