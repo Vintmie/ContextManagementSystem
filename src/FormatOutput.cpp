@@ -15,5 +15,11 @@ std::shared_ptr<spdlog::logger> LoggerManager::get_unique_logger()
 
 void LoggerManager::initializeFile()
 {
-    file_logger = spdlog::basic_logger_mt("global_file_logger", "D:\\UniversityKeep\\ContextManagementSystem\\bin\\spdlog_output.txt",true);
+    if (file_logger)
+    {
+        // Видалення попереднього логера, якщо він існує
+        spdlog::drop(file_logger->name());
+    }
+
+    file_logger = spdlog::basic_logger_mt("global_file_logger", "D:\\UniversityKeep\\ContextManagementSystem\\bin\\global_file_logger.txt", true);
 }
