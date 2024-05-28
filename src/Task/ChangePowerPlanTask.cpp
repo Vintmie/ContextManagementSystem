@@ -134,7 +134,7 @@ ResultType ChangePowerPlanTask::changePowerPlan()
             // std::wcout << "GUID for selected power plan: " << planGuid << std::endl;
             if (SetPowerPlan(planGuid))
             {
-                //std::wcout << L"Power plan changed successfully to: " << planName << std::endl;
+                // std::wcout << L"Power plan changed successfully to: " << planName << std::endl;
                 res_logger->info("Power plan changed successfully to: {}\n", Utils::wstring_to_utf8(planName));
                 file_logger->info("Power plan changed successfully to: {}\n", Utils::wstring_to_utf8(planName));
                 currentExecutionResult = ResultType::SUCCESS;

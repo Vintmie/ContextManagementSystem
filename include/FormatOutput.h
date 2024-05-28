@@ -8,7 +8,6 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-
 enum class ResultType;
 
 template <>
@@ -59,5 +58,4 @@ public:
 
 private:
     static std::shared_ptr<spdlog::logger> file_logger;
-
 };

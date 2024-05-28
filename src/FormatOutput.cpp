@@ -2,7 +2,6 @@
 
 std::shared_ptr<spdlog::logger> LoggerManager::file_logger = nullptr;
 
-
 std::shared_ptr<spdlog::logger> LoggerManager::get_unique_logger()
 {
     static std::atomic<int> counter{0};
@@ -21,5 +20,5 @@ void LoggerManager::initializeFile()
         spdlog::drop(file_logger->name());
     }
 
-    file_logger = spdlog::basic_logger_mt("global_file_logger", "D:\\UniversityKeep\\ContextManagementSystem\\bin\\global_file_logger.txt", true);
+    file_logger = spdlog::basic_logger_mt("global_file_logger", "..\\bin\\global_scenario_log.txt", true);
 }

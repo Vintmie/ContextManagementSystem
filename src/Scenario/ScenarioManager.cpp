@@ -4,14 +4,14 @@
 
 ScenarioManager::ScenarioManager()
 {
-    //spdlog::info("ScenarioManager start!");
-    //std::cout << "------------------------------------------------------------\n";
+    // spdlog::info("ScenarioManager start!");
+    // std::cout << "------------------------------------------------------------\n";
 }
 
 ScenarioManager::~ScenarioManager()
 {
-    //std::cout << "------------------------------------------------------------\n";
-    //spdlog::info("ScenarioManager end!");
+    // std::cout << "------------------------------------------------------------\n";
+    // spdlog::info("ScenarioManager end!");
 }
 
 void ScenarioManager::addScenario(std::shared_ptr<Scenario> scenario)
@@ -26,7 +26,7 @@ void ScenarioManager::executeScenarios()
     {
 
         auto file_logger = LoggerManager::getFileLogger();
-        //res_logger->info("======= Scenario {} start\n", scenario->getName());
+        // res_logger->info("======= Scenario {} start\n", scenario->getName());
         spdlog::info("======= Scenario {} start\n", scenario->getName());
         file_logger->info("======= Scenario {} start\n", scenario->getName());
         scenario->execute();

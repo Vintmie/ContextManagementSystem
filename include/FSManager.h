@@ -33,7 +33,7 @@ public:
     static std::string generateUniqueFileName();
 
 private:
-    std::string filePath = "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\default.json";
+    std::string filePath = "..\\bin\\default.json";
     static const std::string path;
 
     // nlohmann::json scenarioToJson(const Scenario& scenario) const;
