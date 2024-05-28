@@ -45,7 +45,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime, bool isLog)
 
     currentExecutionResult = ResultType::FAILURE;
     auto res_logger = LoggerManager::get_unique_logger();
-    auto file_logger = LoggerManager::getFileLogger();
+    auto file_logger = LoggerManager::getFileLogger(isLog);
     // Initialize COM
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (FAILED(hr))
