@@ -21,14 +21,14 @@ private:
     void displayConditionals() const;
     void displayTasks() const;
 
-    void saveScenarioToFile(const std::shared_ptr<Scenario>& scenario);
+    void saveScenarioToFile(const std::shared_ptr<ScenarioManager>& scenario);
     void loadScenarioFromFile();  // Доданий метод для завантаження сценаріїв з файлу
 
     void viewLoadedScenarios();
     ExecutionTypeCondition selectExecutionTypeCondition() const;
 
     std::unique_ptr<ScenarioManager> scenarioManager;
-    std::vector<std::shared_ptr<Scenario>> scenarioUserBuffer;
-    std::vector<std::shared_ptr<Scenario>> scenarioFileBuffer;
     std::unique_ptr<FSManager> fsManager;
+    std::vector<std::shared_ptr<ScenarioManager>> scenarioUserBuffer;
+    std::vector<std::shared_ptr<ScenarioManager>> scenarioFileBuffer;
 };

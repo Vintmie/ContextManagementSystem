@@ -15,8 +15,10 @@ bool Scenario::execute()
 {
     ResultType prevResult = ResultType::SUCCESS;
     auto condLogger = LoggerManager::get_unique_logger();
+    int stepN = 1;
     for (const auto& step : steps)
     {
+        condLogger->info("\033[1;33mStep {}\033[0m",stepN++ );
         condLogger->info("Current condition: {}\n", step->getExecutionCondition());
         if (step->getExecutionCondition() != ExecutionTypeCondition::UNCONDITIONAL)
         {
