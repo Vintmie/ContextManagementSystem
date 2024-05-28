@@ -20,7 +20,7 @@ bool Scenario::execute()
     for (const auto& step : steps)
     {
         file_logger->info("Step {}\n", stepN);
-        condLogger->info("\033[1;33mStep {}\033[0m",stepN++ );
+        condLogger->info("\033[1;33mStep {}\033[0m", stepN++);
         condLogger->info("Current condition: {}\n", step->getExecutionCondition());
         file_logger->info("Current condition: {}\n", step->getExecutionCondition());
         if (step->getExecutionCondition() != ExecutionTypeCondition::UNCONDITIONAL)

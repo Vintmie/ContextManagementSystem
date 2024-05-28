@@ -1,10 +1,10 @@
 #include "Task/ScheduleTask.h"
 #include "FormatOutput.h"
 #include <windows.h>
-#include "Task/ScheduleTask.h"
 #include <iostream>
 #include <taskschd.h>
 #include <comdef.h>  // Include this header for _variant_t and _bstr_t
+#include "Utils.h"
 
 #pragma comment(lib, "taskschd.lib")
 #pragma comment(lib, "comsupp.lib")
@@ -30,11 +30,8 @@ std::string getFutureTime(int additionalSeconds)
 
 ResultType ScheduleTask::execute()
 {
-    // Calculate the future time (e.g., current time + 3600 seconds = 1 hour)
-    std::cout << "Enter future time (e.g., current time + 3600 seconds = 1 hour)\n";
-    unsigned int time;
-    std::cin >> time;
-    std::string futureTime = getFutureTime(time);
+
+    std::string futureTime = getFutureTime(startUpTime);
     return scheduleTask(futureTime);
 }
 
@@ -47,11 +44,13 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
 {
 
     currentExecutionResult = ResultType::FAILURE;
+    auto res_logger = LoggerManager::get_unique_logger();
+    auto file_logger = LoggerManager::getFileLogger();
     // Initialize COM
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (FAILED(hr))
     {
-        std::cerr << "COM initialization failed with error code: " << hr << std::endl;
+        file_logger->error("COM initialization failed with error code: {}\n", hr);
         return currentExecutionResult;
     }
 
@@ -60,7 +59,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = CoCreateInstance(CLSID_TaskScheduler, NULL, CLSCTX_INPROC_SERVER, IID_ITaskService, (void**)&pService);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to create Task Scheduler instance with error code: " << hr << std::endl;
+        file_logger->error("Failed to create Task Scheduler instance with error code: {}\n", hr);
         CoUninitialize();
         return currentExecutionResult;
     }
@@ -69,7 +68,8 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pService->Connect(_variant_t(), _variant_t(), _variant_t(), _variant_t());
     if (FAILED(hr))
     {
-        std::cerr << "Failed to connect to Task Scheduler with error code: " << hr << std::endl;
+        file_logger->error("Failed to connect to Task Scheduler with error code: {}\n", hr);
+
         pService->Release();
         CoUninitialize();
         return currentExecutionResult;
@@ -80,7 +80,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pService->GetFolder(_bstr_t(L"\\"), &pRootFolder);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to get root folder for Task Scheduler with error code: " << hr << std::endl;
+        file_logger->error("Failed to get root folder for Task Scheduler with error code: {}\n", hr);
         pService->Release();
         CoUninitialize();
         return currentExecutionResult;
@@ -91,7 +91,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pService->NewTask(0, &pTaskDefinition);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to create a new task definition with error code: " << hr << std::endl;
+        file_logger->error("Failed to create a new task definition with error code: {}\n", hr);
         pRootFolder->Release();
         pService->Release();
         CoUninitialize();
@@ -103,7 +103,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pTaskDefinition->get_RegistrationInfo(&pRegInfo);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to get registration info with error code: " << hr << std::endl;
+        file_logger->error("Failed to get registration info with error code: {}\n", hr);
         pTaskDefinition->Release();
         pRootFolder->Release();
         pService->Release();
@@ -114,7 +114,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pRegInfo->put_Description(_bstr_t(L"SCHEDULE TASK BY WIN-MANAGER"));  // Task name
     if (FAILED(hr))
     {
-        std::cerr << "Failed to set task name with error code: " << hr << std::endl;
+        file_logger->error("Failed to set task name with error code: {}\n", hr);
         pRegInfo->Release();
         pTaskDefinition->Release();
         pRootFolder->Release();
@@ -128,7 +128,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pTaskDefinition->get_Actions(&pActionCollection);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to get action collection with error code: " << hr << std::endl;
+        file_logger->error("Failed to get action collection with error code: {}\n", hr);
         pRegInfo->Release();
         pTaskDefinition->Release();
         pRootFolder->Release();
@@ -141,7 +141,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pActionCollection->Create(TASK_ACTION_EXEC, &pAction);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to create action with error code: " << hr << std::endl;
+        file_logger->error("Failed to create action with error code: {}\n", hr);
         pActionCollection->Release();
         pRegInfo->Release();
         pTaskDefinition->Release();
@@ -155,7 +155,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pAction->QueryInterface(IID_IExecAction, (void**)&pExecAction);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to get exec action interface with error code: " << hr << std::endl;
+        file_logger->error("Failed to get exec action interface with error code: {}\n", hr);
         pAction->Release();
         pActionCollection->Release();
         pRegInfo->Release();
@@ -166,10 +166,10 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
         return currentExecutionResult;
     }
 
-    hr = pExecAction->put_Path(_bstr_t(L"C:\\Windows\\system32\\mspaint.exe"));  // Path to your executable
+    hr = pExecAction->put_Path(Utils::stdWstringToBstr(startPath));  // Path to your executable
     if (FAILED(hr))
     {
-        std::cerr << "Failed to set action path with error code: " << hr << std::endl;
+        file_logger->error("Failed to set action path with error code: {}\n", hr);
         pExecAction->Release();
         pAction->Release();
         pActionCollection->Release();
@@ -186,7 +186,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pTaskDefinition->get_Triggers(&pTriggerCollection);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to get trigger collection with error code: " << hr << std::endl;
+        file_logger->error("Failed to get trigger collection with error code: {}\n", hr);
         pExecAction->Release();
         pAction->Release();
         pActionCollection->Release();
@@ -202,7 +202,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pTriggerCollection->Create(TASK_TRIGGER_TIME, &pTrigger);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to create time trigger with error code: " << hr << std::endl;
+        file_logger->error("Failed to create time trigger with error code: {}\n", hr);
         pTriggerCollection->Release();
         pExecAction->Release();
         pAction->Release();
@@ -219,7 +219,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     hr = pTrigger->QueryInterface(IID_ITimeTrigger, (void**)&pTimeTrigger);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to get time trigger interface with error code: " << hr << std::endl;
+        file_logger->error("Failed to get time trigger interface with error code: {}\n", hr);
         pTrigger->Release();
         pTriggerCollection->Release();
         pExecAction->Release();
@@ -233,14 +233,12 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
         return currentExecutionResult;
     }
 
-    // Calculate the future time (e.g., current time + 3600 seconds = 1 hour)
-    // Convert to _bstr_t
     _bstr_t bstrFutureTime(futureTime.c_str());
 
-    hr = pTimeTrigger->put_StartBoundary(bstrFutureTime);  // Set the start time for the task
+    hr = pTimeTrigger->put_StartBoundary(bstrFutureTime);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to set start time for the trigger with error code: " << hr << std::endl;
+        file_logger->error("Failed to set start time for the trigger with error code: {}\n", hr);
         pTimeTrigger->Release();
         pTrigger->Release();
         pTriggerCollection->Release();
@@ -267,13 +265,15 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
 
     if (FAILED(hr))
     {
-        std::cerr << "Failed to register task definition with error code: " << hr << std::endl;
+        file_logger->error("Failed to register task definition with error code: {}\n", hr);
         currentExecutionResult = ResultType::FAILURE;
     }
     else
     {
-        std::cout << "Task scheduled successfully!" << std::endl;
+        file_logger->info("Task {} scheduled on {}\n", Utils::wstring_to_utf8(startPath), futureTime);
+        res_logger->info("Task {} scheduled on {}\n", Utils::wstring_to_utf8(startPath), futureTime);
         currentExecutionResult = ResultType::SUCCESS;
+
         pRegisteredTask->Release();
     }
 
@@ -290,5 +290,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime)
     pService->Release();
     CoUninitialize();
 
+    file_logger->info("ScheduleTask returned: {}\n", currentExecutionResult);
+    res_logger->info("ScheduleTask returned: {}\n", currentExecutionResult);
     return currentExecutionResult;
 }

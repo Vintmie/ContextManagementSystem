@@ -1,6 +1,7 @@
 #include "Utils.h"
 #include <commdlg.h>
 #include <iostream>
+#include <comutil.h>
 
 std::wstring Utils::OpenFileSelectionDialog(DWORD flags, LPCWSTR title, LPCWSTR filter)
 {
@@ -82,4 +83,9 @@ std::wstring Utils::utf8_to_wstring(const std::string& str)
     std::wstring w_str(size_needed, 0);
     MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &w_str[0], size_needed);
     return w_str;
+}
+
+BSTR Utils::stdWstringToBstr(const std::wstring& str)
+{
+    return _bstr_t(str.c_str()).GetBSTR();
 }

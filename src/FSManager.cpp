@@ -4,9 +4,10 @@
 #include "Conditional/BatteryLevelCondition.h"
 #include "Task/MessageBoxTask.h"
 #include "Task/ChangePowerPlanTask.h"
+#include "Task/ScheduleTask.h"
 #include <fstream>
 
-const std::string FSManager::path = "D:\\UniversityKeep\\ContextManagementSystem\\.DB\\";
+const std::string FSManager::path = "..\\bin\\";
 
 void FSManager::saveScenarios(const ScenarioManager& manager) const
 {
@@ -167,6 +168,10 @@ nlohmann::json FSManager::taskToJson(const ITask& task) const
     {
         j["type"] = "ChangePowerPlanTask";
     }
+    else if (const auto* scheduleTask = dynamic_cast<const ScheduleTask*>(&task))  // Add this block
+    {
+        j["type"] = "ScheduleTask";
+    }
     return j;
 }
 
@@ -180,6 +185,10 @@ std::unique_ptr<ITask> FSManager::jsonToTask(const nlohmann::json& j) const
     else if (type == "ChangePowerPlanTask")
     {
         return std::make_unique<ChangePowerPlanTask>();
+    }
+    else if (type == "ScheduleTask")  // Add this block
+    {
+        return std::make_unique<ScheduleTask>();
     }
     return nullptr;
 }

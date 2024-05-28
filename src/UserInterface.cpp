@@ -3,6 +3,7 @@
 #include "Conditional/BatteryLevelCondition.h"
 #include "Task/ChangePowerPlanTask.h"
 #include "Task/MessageBoxTask.h"
+#include "Task/ScheduleTask.h"
 #include "FSManager.h"
 #include <iostream>
 #include <cstdlib>
@@ -35,7 +36,7 @@ void UserInterface::showMainMenu()
         clearScreen();
         std::cout << "1) Створити новий сценарій\n";
         std::cout << "2) Переглянути створені сценарії\n";
-        std::cout << "3) Виконати сценарій\n";
+        std::cout << "3) Менеджер сценаріїв\n";
         std::cout << "4) Завантажити сценарій з файлу\n";
         std::cout << "5) Переглянути завантажені сценарії\n";
         std::cout << "6) Вихід з програми\n";
@@ -89,6 +90,16 @@ std::unique_ptr<ITask> createUserDefinedTask(int taskChoice)
     else if (taskChoice == 2)
     {
         return std::make_unique<MessageBoxTask>();
+    }
+    else if (taskChoice == 3)
+    {
+        int sec;
+        // Calculate the future time (e.g., current time + 3600 seconds = 1 hour)
+        std::cout << "Введіть час (у секундах), через який відбудеться спрацювання. Після цього оберіть файл.\n";
+        std::cin >> sec;
+        std::wstring filePath = Utils::OpenFileSelectionDialog(
+            OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, L"Виберіть файл для планування", L"Exe\0*.exe\0");
+        return std::make_unique<ScheduleTask>(sec, filePath);
     }
     else
     {
@@ -199,6 +210,10 @@ void printTaskInfo(const std::shared_ptr<ScenarioStep>& step)
     {
         std::cout << "MessageBoxTask\n";
     }
+    else if (dynamic_cast<const ScheduleTask*>(step->getTask()))
+    {
+        std::cout << "ScheduleTask\n";
+    }
 }
 
 void UserInterface::viewScenarios()
@@ -285,9 +300,9 @@ void UserInterface::executeScenario()
             std::cout << ": " << scenario->getDescription() << "\n";
             ++index;
         }
-        
+
         char start;
-        std::cout << "Почати формування сценаріїв для виконання? (y/n): ";
+        std::cout << "Сформувати перелік сценаріїв для виконання? (y/n): ";
         std::cin >> start;
         if (start != 'y')
         {
@@ -337,7 +352,7 @@ void UserInterface::executeScenario()
 
                 // Запит на збереження сценаріїв у файл
                 char save;
-                std::cout << "Зберегти сценарій(ї) у файл перед виконанням? (y/n): ";
+                std::cout << "Зберегти сценарії у файл перед виконанням? (y/n): ";
                 std::cin >> save;
                 if (save == 'y')
                 {
@@ -346,7 +361,7 @@ void UserInterface::executeScenario()
                         OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу сценарію", L"JSON Files\0*.json\0");
                     // fsManager->saveScenario(*uniqueScenarios[ch - 1], Utils::wstring_to_utf8(filePath));
                     fsManager->saveScenarios(*scenarioManager, Utils::wstring_to_utf8(filePath));
-                    std::cout << "Сценарій(ї) збережено у файл.\n";
+                    std::cout << "Сценарії збережено у файл.\n";
                     std::this_thread::sleep_for(std::chrono::seconds(3));
                     clearScreen();
                 }
@@ -362,17 +377,13 @@ void UserInterface::executeScenario()
             {
                 std::cout << "Немає вибраних сценаріїв для виконання.\n";
             }
-        
         }
-        
     }
     scenarioManager->clearScenarios();
     std::cout << "Натисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
 }
-
-
 
 void UserInterface::exitProgram()
 {
@@ -389,6 +400,7 @@ void UserInterface::displayTasks() const
 {
     std::cout << "1) ChangePowerPlanTask\n";
     std::cout << "2) MessageBoxTask\n";
+    std::cout << "3) ScheduleTask\n";
 }
 
 ExecutionTypeCondition UserInterface::selectExecutionTypeCondition() const
