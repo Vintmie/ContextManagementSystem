@@ -1,8 +1,13 @@
-#include <spdlog/spdlog.h>
-#include "spdlog/fmt/ostr.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
+#include <iostream>
+#include <memory>
+#include <vector>
 #include <atomic>
 #include <sstream>
+#include <spdlog/spdlog.h>
+#include "spdlog/fmt/ostr.h"
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
 
 enum class ResultType;
 
@@ -48,13 +53,11 @@ struct fmt::formatter<ExecutionTypeCondition>
 class LoggerManager
 {
 public:
-    static std::shared_ptr<spdlog::logger> get_unique_logger()
-    {
-        static std::atomic<int> counter{0};
-        std::ostringstream oss;
-        oss << "UNIQUE_" << counter++;
-        auto logger = spdlog::stdout_color_mt(oss.str());
-        logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
-        return logger;
-    }
+    static std::shared_ptr<spdlog::logger> get_unique_logger();
+    static void initializeFile();
+    static std::shared_ptr<spdlog::logger>& getFileLogger() { return file_logger; }
+
+private:
+    static std::shared_ptr<spdlog::logger> file_logger;
+
 };

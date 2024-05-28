@@ -9,11 +9,13 @@
 #include <limits>
 #include <set>
 #include <chrono>
+#include "FormatOutput.h"
 
 UserInterface::UserInterface()
     : scenarioManager(std::make_unique<ScenarioManager>()), fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(),
       scenarioFileBuffer()
 {
+    LoggerManager::initializeFile();
 }
 
 void clearScreen()
@@ -279,7 +281,8 @@ void UserInterface::executeScenario()
         int index = 1;
         for (const auto& scenario : uniqueScenarios)
         {
-            std::cout << index << ") " << scenario->getName() << "\n";
+            std::cout << index << ") " << scenario->getName() << "";
+            std::cout << ": " << scenario->getDescription() << "\n";
             ++index;
         }
         
@@ -298,7 +301,8 @@ void UserInterface::executeScenario()
             int index = 1;
             for (const auto& scenario : uniqueScenarios)
             {
-                std::cout << index << ") " << scenario->getName() << "\n";
+                std::cout << index << ") " << scenario->getName();
+                std::cout << ": " << scenario->getDescription() << "\n";
                 ++index;
             }
             std::vector<int> choices;
