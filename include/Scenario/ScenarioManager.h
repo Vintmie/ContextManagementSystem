@@ -10,6 +10,7 @@ public:
     ScenarioManager();
     ~ScenarioManager();
     void addScenario(std::shared_ptr<Scenario> scenario);
+    void removeScenario(std::shared_ptr<Scenario> scenario);
 
     void executeScenarios(bool isLog = true);
     void clearScenarios();

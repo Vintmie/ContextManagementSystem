@@ -19,6 +19,12 @@ void ScenarioManager::addScenario(std::shared_ptr<Scenario> scenario)
     scenarios.push_back(scenario);
 }
 
+void ScenarioManager::removeScenario(std::shared_ptr<Scenario> scenario)
+{
+    scenarios.erase(std::remove(scenarios.begin(), scenarios.end(), scenario), scenarios.end());
+
+}
+
 void ScenarioManager::executeScenarios(bool isLog)
 {
     auto res_logger = LoggerManager::get_unique_logger();
