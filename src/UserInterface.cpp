@@ -45,7 +45,7 @@ void UserInterface::showMainMenu()
         std::cout << "3) Менеджер сценаріїв\n";
         std::cout << "4) Завантажити сценарій з файлу\n";
         std::cout << "5) Переглянути завантажені сценарії\n";
-        std::cout << "6) Виконувати сценарій кожну хвилину\n";
+        std::cout << "6) Регулярне виконання сценарію\n";
         std::cout << "7) Переглянути запущені сценарії\n";
         std::cout << "8) Зупинити виконання запущеного сценарію\n";
         std::cout << "9) Зупинити виконання усіх запущених сценаріїв\n";
@@ -107,6 +107,7 @@ void UserInterface::startPeriodicExecution()
             }
         }
     }
+
     std::cout << "Максимальна кількість одночасно запущених сценаріїв може становити: " << MAX_THREADS << "\n";
     if (runningScenarioIds.size() >= MAX_THREADS)
     {
@@ -125,7 +126,7 @@ void UserInterface::startPeriodicExecution()
     }
 
     int choice;
-    std::cout << "Виберіть сценарій для виконання кожну хвилину: ";
+    std::cout << "Виберіть сценарій для виконання: ";
     std::cin >> choice;
 
     if (choice <= 0 || choice > uniqueScenarios.size())
@@ -143,14 +144,26 @@ void UserInterface::startPeriodicExecution()
         std::this_thread::sleep_for(std::chrono::seconds(1));
         return;
     }
+
     if (runningScenarioIds.size() < MAX_THREADS)
     {
         scenarioPeriodicManager->addScenario(selectedScenario);
 
         stopPeriodicExecutionFlag = false;
 
+        int executionInterval;
+        do
+        {
+            std::cout << "Введіть інтервал виконання сценарію (у хвилинах): ";
+            std::cin >> executionInterval;
+            if (executionInterval <= 0)
+            {
+                std::cout << "Неправильний інтервал. Будь ласка, введіть значення більше нуля.\n";
+            }
+        } while (executionInterval <= 0);
+
         periodicExecutionThreads.emplace_back(
-            [this, selectedScenario, scenarioId]()
+            [this, selectedScenario, scenarioId, executionInterval]()
             {
                 auto file_logger = LoggerManager::getThreadFileLogger(false);
                 std::thread::id thread_id = std::this_thread::get_id();
@@ -164,7 +177,8 @@ void UserInterface::startPeriodicExecution()
                     file_logger->info("======= Scenario {} start\n", selectedScenario->getName(), thread_id_str);
                     selectedScenario->execute(false);
                     file_logger->info("Scenario {} end =======\n", selectedScenario->getName(), thread_id_str);
-                    if (cv.wait_for(lk, std::chrono::minutes(1), [this] { return stopPeriodicExecutionFlag.load(); })) break;
+                    if (cv.wait_for(lk, std::chrono::minutes(executionInterval), [this] { return stopPeriodicExecutionFlag.load(); }))
+                        break;
                 }
 
                 runningScenarioIds.erase(scenarioId);
@@ -172,7 +186,7 @@ void UserInterface::startPeriodicExecution()
 
         runningScenarioIds.insert(scenarioId);
 
-        std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожну хвилину.\n";
+        std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожні " << executionInterval << " хвилин.\n";
     }
     else
     {
