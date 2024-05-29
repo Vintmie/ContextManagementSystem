@@ -17,7 +17,7 @@ ResultType MessageBoxTask::getMessageBox(bool isLog)
     if (MessageBoxW(NULL, L"Hello from MessageBox!", L"Message", MB_OK | MB_ICONINFORMATION))
     {
         auto res_logger = LoggerManager::get_unique_logger();
-        auto file_logger = LoggerManager::getThreadFileLogger();
+        auto file_logger = LoggerManager::getThreadFileLogger(isLog);
         currentExecutionResult = ResultType::SUCCESS;
         if (isLog != false)
         {

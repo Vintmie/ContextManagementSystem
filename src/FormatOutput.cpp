@@ -22,14 +22,18 @@ std::shared_ptr<spdlog::logger> LoggerManager::get_unique_logger()
 
 std::shared_ptr<spdlog::logger>& LoggerManager::getFileLogger(bool isNotRegular)
 {
-    if (!isNotRegular)
+    if (isNotRegular == true)
         return file_logger;
     else
         throw std::runtime_error("Invalid request for file logger.");
 }
 
-std::shared_ptr<spdlog::logger>& LoggerManager::getThreadFileLogger()
+std::shared_ptr<spdlog::logger>& LoggerManager::getThreadFileLogger(bool notThread)
 {
+    if (notThread == true)
+    {
+        return getFileLogger(true);  // Call getFileLogger if flag is false
+    }
     std::lock_guard<std::mutex> lock(logger_mutex);
     auto thread_id = std::this_thread::get_id();
 

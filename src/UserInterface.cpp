@@ -134,7 +134,7 @@ void UserInterface::startPeriodicExecution()
     periodicExecutionThread = std::thread(
         [this, selectedScenario]()
         {
-            auto file_logger = LoggerManager::getThreadFileLogger();
+            auto file_logger = LoggerManager::getThreadFileLogger(false);
             std::thread::id thread_id = std::this_thread::get_id();
             std::ostringstream oss;
             oss << thread_id;

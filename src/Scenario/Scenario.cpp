@@ -15,7 +15,7 @@ bool Scenario::execute(bool isLog)
 {
     ResultType prevResult = ResultType::SUCCESS;
     auto condLogger = LoggerManager::get_unique_logger();
-    auto file_logger =  LoggerManager::getThreadFileLogger();
+    auto file_logger = LoggerManager::getThreadFileLogger(isLog);
     int stepN = 1;
     for (const auto& step : steps)
     {
