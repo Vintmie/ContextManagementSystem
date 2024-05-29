@@ -24,7 +24,7 @@ public:
     void setDescription(const std::string& description);
     std::string getDescription() const;
 
-
+    int getId() const { return id; }
     
 
 private:
@@ -32,5 +32,6 @@ private:
     std::vector<std::shared_ptr<ScenarioStep>> steps;
     std::string name;
     std::string description;
-
+    int id;  // Add a member to store the scenario ID
+    static int nextId;
 };

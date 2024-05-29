@@ -127,12 +127,22 @@ void UserInterface::startPeriodicExecution()
     }
 
     auto selectedScenario = uniqueScenarios[choice - 1];
+    int scenarioId = selectedScenario->getId();  // Get the ID of the selected scenario
+
+    // Check if the selected scenario is already running
+    if (runningScenarioIds.find(scenarioId) != runningScenarioIds.end())
+    {
+        std::cout << "Цей сценарій вже запущений.\n";
+
+        return;
+    }
+
     scenarioPeriodicManager->addScenario(selectedScenario);
 
     stopPeriodicExecutionFlag = false;
 
-   periodicExecutionThreads.emplace_back(
-        [this, selectedScenario]()
+    periodicExecutionThreads.emplace_back(
+        [this, selectedScenario, scenarioId]()
         {
             auto file_logger = LoggerManager::getThreadFileLogger(false);
             std::thread::id thread_id = std::this_thread::get_id();
@@ -148,7 +158,13 @@ void UserInterface::startPeriodicExecution()
                 file_logger->info("Scenario {} end =======\n", selectedScenario->getName(), thread_id_str);
                 if (cv.wait_for(lk, std::chrono::minutes(1), [this] { return stopPeriodicExecutionFlag.load(); })) break;
             }
+
+            // Remove the scenario ID from the set of running scenario IDs
+            runningScenarioIds.erase(scenarioId);
         });
+
+    // Add the scenario ID to the set of running scenario IDs
+    runningScenarioIds.insert(scenarioId);
 
     std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожну хвилину.\n";
     std::cout << "Натисніть Enter для повернення до головного меню...";
@@ -164,29 +180,25 @@ void UserInterface::stopPeriodicExecution()
     }
     cv.notify_all();  // Notify all waiting threads to stop
 
-    // Display the status of scenarios only once
-    bool hasRunningScenarios = false;
+    // Join the periodic execution threads
     for (auto& thread : periodicExecutionThreads)
     {
         if (thread.joinable())
         {
-            hasRunningScenarios = true;
-            break;
+            try
+            {
+                thread.join();  // Join the thread
+            }
+            catch (const std::exception& e)
+            {
+                // Handle the exception, you can log it or print an error message
+                std::cerr << "Exception occurred while joining thread: " << e.what() << std::endl;
+            }
         }
     }
 
-    if (hasRunningScenarios)
-    {
-        std::cout << "Зупинено виконання сценаріїв.\n";
-    }
-    else
-    {
-        std::cout << "Немає активного виконання сценаріїв.\n";
-    }
-
-    std::cout << "Натисніть Enter для повернення до головного меню...";
-    std::cin.ignore(32767, '\n');
-    std::cin.get();
+    // Clear the periodic execution threads vector
+    periodicExecutionThreads.clear();
 }
 
 std::unique_ptr<IConditional> createUserDefinedCondition(int condChoice)

@@ -9,7 +9,7 @@
 #include <thread>
 #include <atomic>
 #include <condition_variable>
-
+#include <set> 
 
 class UserInterface
 {
@@ -21,14 +21,15 @@ private:
     void createScenario();
     void viewScenarios();
     void executeScenario();
-    void startPeriodicExecution();
-    void stopPeriodicExecution(); // New method to stop the periodic execution
-    void exitProgram();
-    void displayConditionals() const;
+      void displayConditionals() const;
     void displayTasks() const;
 
     void showRunningScenarios();
 
+
+    void startPeriodicExecution();
+    void stopPeriodicExecution();  // New method to stop the periodic execution
+    void exitProgram();
     void stopSelectedScenario();  // Додаємо оголошення нового методу
 
     void saveScenarioToFile(const std::shared_ptr<ScenarioManager>& scenario);
@@ -48,4 +49,7 @@ private:
     std::mutex cv_m;
     std::vector<std::thread> periodicExecutionThreads;  // Thread for periodic execution
     std::atomic<bool> stopPeriodicExecutionFlag; // Flag to stop the periodic execution
+
+    std::set<int> runningScenarioIds;  // Declare the set to store running scenario IDs
+    //static const int MAX_THREADS;
 };

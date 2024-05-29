@@ -1,10 +1,11 @@
 #include "Scenario/Scenario.h"
 #include "FormatOutput.h"
 
+int Scenario::nextId = 0;  // Define the static member variable nextId
 
-Scenario::Scenario() : name(generateUniqueScenarioName()), description("DefaultDescription"){}
+Scenario::Scenario() : name(generateUniqueScenarioName()), description("DefaultDescription"), id(nextId++) {}
 
-Scenario::Scenario(const std::string& name, const std::string& description) : name(name), description(description){}
+Scenario::Scenario(const std::string& name, const std::string& description) : name(name), description(description), id(nextId++) {}
 
 void Scenario::addStep(std::shared_ptr<ScenarioStep> step)
 {
@@ -64,7 +65,6 @@ void Scenario::setDescription(const std::string& description)
 {
     this->description = description;
 }
-
 std::string Scenario::getDescription() const
 {
     return description;
