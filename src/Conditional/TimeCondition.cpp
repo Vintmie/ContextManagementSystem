@@ -9,12 +9,12 @@ bool TimeCondition::evaluate(bool isLog) const
     GetLocalTime(&systemTime);
     int hour = systemTime.wHour;
     auto res_logger = LoggerManager::get_unique_logger();
-    auto file_logger = LoggerManager::getFileLogger(isLog);
+    auto file_logger = LoggerManager::getThreadFileLogger();
     if (isLog != false)
     {
         res_logger->info("TimeCondition returns: {}\n", Uhour > systemTime.wHour ? true : false);
     }
-    file_logger->info("TimeCondition returns: {}\n", Uhour > systemTime.wHour ? true : false);
+    file_logger->info("TimeCondition returns: {}\n", Uhour > systemTime.wHour ? true : false, thread_id_str);
     return Uhour > systemTime.wHour ? true : false;
 }
 

@@ -8,7 +8,7 @@ BatteryLevelCondition::BatteryLevelCondition(int crucialLevel) : crucialLevel(cr
 bool BatteryLevelCondition::evaluate(bool isLog) const
 {
     auto res_logger = LoggerManager::get_unique_logger();
-    auto file_logger = LoggerManager::getFileLogger(isLog);
+    auto file_logger = LoggerManager::getThreadFileLogger();
     int currentBatteryLevel = getBatteryLevel();
     if (isLog != false)
     {
@@ -16,8 +16,8 @@ bool BatteryLevelCondition::evaluate(bool isLog) const
         res_logger->info("getBatteryLevel returns: {}\n", currentBatteryLevel <= crucialLevel);
     }
 
-    file_logger->info("CurrentBatteryLevel: {}\n", currentBatteryLevel);
-    file_logger->info("getBatteryLevel returns: {}\n", currentBatteryLevel <= crucialLevel);
+    file_logger->info("CurrentBatteryLevel: {}\n", currentBatteryLevel, thread_id_str);
+    file_logger->info("getBatteryLevel returns: {}\n", currentBatteryLevel <= crucialLevel, thread_id_str);
 
     return currentBatteryLevel <= crucialLevel;
 }

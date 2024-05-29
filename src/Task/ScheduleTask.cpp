@@ -45,7 +45,7 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime, bool isLog)
 
     currentExecutionResult = ResultType::FAILURE;
     auto res_logger = LoggerManager::get_unique_logger();
-    auto file_logger = LoggerManager::getFileLogger(isLog);
+    auto file_logger = LoggerManager::getThreadFileLogger();
     // Initialize COM
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (FAILED(hr))
@@ -270,10 +270,10 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime, bool isLog)
     }
     else
     {
-        file_logger->info("Task {} scheduled on {}\n", Utils::wstring_to_utf8(startPath), futureTime);
+        file_logger->info("Task {} scheduled on {}\n", Utils::wstring_to_utf8(startPath), futureTime, thread_id_str);
         if (isLog != false)
         {
-            res_logger->info("Task {} scheduled on {}\n", Utils::wstring_to_utf8(startPath), futureTime);
+            res_logger->info("Task {} scheduled on {}\n", Utils::wstring_to_utf8(startPath), futureTime, thread_id_str);
         }
         currentExecutionResult = ResultType::SUCCESS;
 
@@ -293,10 +293,10 @@ ResultType ScheduleTask::scheduleTask(std::string futureTime, bool isLog)
     pService->Release();
     CoUninitialize();
 
-    file_logger->info("ScheduleTask returned: {}\n", currentExecutionResult);
+    file_logger->info("ScheduleTask returned: {}\n", currentExecutionResult, thread_id_str);
     if (isLog != false)
     {
-        res_logger->info("ScheduleTask returned: {}\n", currentExecutionResult);
+        res_logger->info("ScheduleTask returned: {}\n", currentExecutionResult, thread_id_str);
     }
     return currentExecutionResult;
 }

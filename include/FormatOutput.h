@@ -7,6 +7,9 @@
 #include "spdlog/fmt/ostr.h"
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <unordered_map>
+#include <mutex>
+#include <thread>
 
 enum class ResultType;
 
@@ -49,15 +52,23 @@ struct fmt::formatter<ExecutionTypeCondition>
     }
 };
 
+
+extern thread_local std::string thread_id_str;
+
+
 class LoggerManager
 {
 public:
     static std::shared_ptr<spdlog::logger> get_unique_logger();
     static void initializeFile();
-    static void initializeRegularFile();
+    static void initializeRegularFiles(size_t count);
     static std::shared_ptr<spdlog::logger>& getFileLogger(bool isNotRegular = true);
+    static std::shared_ptr<spdlog::logger>& getThreadFileLogger();
 
 private:
     static std::shared_ptr<spdlog::logger> file_logger;
-    static std::shared_ptr<spdlog::logger> regular_file_logger;
+    static std::unordered_map<size_t, std::shared_ptr<spdlog::logger>> regular_file_loggers;
+    static std::unordered_map<std::thread::id, size_t> thread_logger_map;
+    static std::mutex logger_mutex;
+    static size_t logger_count;
 };

@@ -15,17 +15,17 @@ bool Scenario::execute(bool isLog)
 {
     ResultType prevResult = ResultType::SUCCESS;
     auto condLogger = LoggerManager::get_unique_logger();
-    auto file_logger = LoggerManager::getFileLogger(isLog);
+    auto file_logger =  LoggerManager::getThreadFileLogger();
     int stepN = 1;
     for (const auto& step : steps)
     {
-        file_logger->info("Step {}\n", stepN);
+        file_logger->info("Step {}\n", stepN, thread_id_str);
         if (isLog != false)
         {
             condLogger->info("\033[1;33mStep {}\033[0m", stepN++);
             condLogger->info("Current condition: {}\n", step->getExecutionCondition());
         }
-        file_logger->info("Current condition: {}\n", step->getExecutionCondition());
+        file_logger->info("Current condition: {}\n", step->getExecutionCondition(), thread_id_str);
         if (step->getExecutionCondition() != ExecutionTypeCondition::UNCONDITIONAL)
         {
             // CHECK PREVIOUS STATE
