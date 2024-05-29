@@ -12,6 +12,7 @@
 #include <chrono>
 #include "FormatOutput.h"
 #include <functional>
+#include <sstream>
 
 UserInterface::UserInterface()
     : scenarioManager(std::make_unique<ScenarioManager>()),
@@ -20,7 +21,8 @@ UserInterface::UserInterface()
       scenarioFileBuffer(), stopPeriodicExecutionFlag(false)
 {
     LoggerManager::initializeFile();
-    LoggerManager::initializeRegularFile();
+    //LoggerManager::initializeRegularFile();
+    LoggerManager::initializeRegularFiles(6);
 }
 
 void clearScreen()
@@ -127,14 +129,23 @@ void UserInterface::startPeriodicExecution()
     auto selectedScenario = uniqueScenarios[choice - 1];
     scenarioPeriodicManager->addScenario(selectedScenario);
 
-stopPeriodicExecutionFlag = false;
+    stopPeriodicExecutionFlag = false;
+
     periodicExecutionThread = std::thread(
         [this, selectedScenario]()
         {
+            auto file_logger = LoggerManager::getThreadFileLogger();
+            std::thread::id thread_id = std::this_thread::get_id();
+            std::ostringstream oss;
+            oss << thread_id;
+            thread_id_str = oss.str();  // Set the thread-local thread_id_str
+
             std::unique_lock<std::mutex> lk(cv_m);
             while (!stopPeriodicExecutionFlag)
             {
+                file_logger->info("======= Scenario {} start\n", selectedScenario->getName(), thread_id_str);
                 selectedScenario->execute(false);
+                file_logger->info("Scenario {} end =======\n", selectedScenario->getName(),thread_id_str);
                 if (cv.wait_for(lk, std::chrono::minutes(1), [this] { return stopPeriodicExecutionFlag.load(); })) break;
             }
         });

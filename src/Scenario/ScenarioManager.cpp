@@ -31,19 +31,19 @@ void ScenarioManager::executeScenarios(bool isLog)
     for (const auto& scenario : scenarios)
     {
 
-        auto file_logger = LoggerManager::getFileLogger(isLog);
+        auto file_logger = LoggerManager::getThreadFileLogger();
         if (isLog != false)
         {
             spdlog::info("======= Scenario {} start\n", scenario->getName());
         }
 
-        file_logger->info("======= Scenario {} start\n", scenario->getName());
+        file_logger->info("======= Scenario {} start\n", scenario->getName(), thread_id_str);
         scenario->execute(isLog);
         if (isLog != false)
         {
             spdlog::info("Scenario {} end =======\n", scenario->getName());
         }
-        file_logger->info("Scenario {} end =======\n", scenario->getName());
+        file_logger->info("Scenario {} end =======\n", scenario->getName(), thread_id_str);
     }
 }
 
