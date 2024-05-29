@@ -28,28 +28,6 @@ std::shared_ptr<spdlog::logger>& LoggerManager::getFileLogger(bool isNotRegular)
         throw std::runtime_error("Invalid request for file logger.");
 }
 
-std::shared_ptr<spdlog::logger>& LoggerManager::getThreadFileLogger(bool notThread)
-{
-    if (notThread == true)
-    {
-        return getFileLogger(true);  // Call getFileLogger if flag is false
-    }
-    std::lock_guard<std::mutex> lock(logger_mutex);
-    auto thread_id = std::this_thread::get_id();
-
-    if (thread_logger_map.find(thread_id) == thread_logger_map.end())
-    {
-        if (logger_count >= regular_file_loggers.size())
-        {
-            throw std::runtime_error("Exceeded the number of available regular loggers.");
-        }
-        thread_logger_map[thread_id] = logger_count++;
-    }
-
-    size_t index = thread_logger_map[thread_id];
-    return regular_file_loggers[index];
-}
-
 void LoggerManager::initializeFile()
 {
     std::lock_guard<std::mutex> lock(logger_mutex);
@@ -58,7 +36,9 @@ void LoggerManager::initializeFile()
         spdlog::drop(file_logger->name());
     }
     file_logger = spdlog::basic_logger_mt("global_file_logger", "..\\bin\\global_scenario_log.txt", true);
+    file_logger->flush_on(spdlog::level::info);
 }
+
 
 void LoggerManager::initializeRegularFiles(size_t count)
 {
@@ -66,15 +46,32 @@ void LoggerManager::initializeRegularFiles(size_t count)
     regular_file_loggers.clear();
     thread_logger_map.clear();
     logger_count = 0;
+}
 
-    for (size_t i = 0; i < count; ++i)
+std::shared_ptr<spdlog::logger>& LoggerManager::getThreadFileLogger(bool notThread)
+{
+    if (notThread == true)
     {
+        return getFileLogger(true);  // Call getFileLogger if flag is false
+    }
+
+    std::lock_guard<std::mutex> lock(logger_mutex);
+    auto thread_id = std::this_thread::get_id();
+
+    if (thread_logger_map.find(thread_id) == thread_logger_map.end())
+    {
+        size_t new_index = logger_count++;
         std::ostringstream oss;
-        oss << "regular_file_logger_" << i;
+        oss << "regular_file_logger_" << new_index;
         std::string logger_name = oss.str();
-        std::string file_name = "..\\bin\\regular_scenario_log_" + std::to_string(i) + ".txt";
+        std::string file_name = "..\\bin\\threads-log\\thread_scenario_log_" + std::to_string(new_index + 1) + ".txt";
 
         auto logger = spdlog::basic_logger_mt(logger_name, file_name, true);
-        regular_file_loggers[i] = logger;
+        logger->flush_on(spdlog::level::info);
+        regular_file_loggers[new_index] = logger;
+        thread_logger_map[thread_id] = new_index;
     }
+
+    size_t index = thread_logger_map[thread_id];
+    return regular_file_loggers[index];
 }
