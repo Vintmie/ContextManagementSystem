@@ -2,17 +2,9 @@
 #include "FormatOutput.h"
 #include <iostream>
 
-ScenarioManager::ScenarioManager()
-{
-    // spdlog::info("ScenarioManager start!");
-    // std::cout << "------------------------------------------------------------\n";
-}
+ScenarioManager::ScenarioManager() {}
 
-ScenarioManager::~ScenarioManager()
-{
-    // std::cout << "------------------------------------------------------------\n";
-    // spdlog::info("ScenarioManager end!");
-}
+ScenarioManager::~ScenarioManager() {}
 
 void ScenarioManager::addScenario(std::shared_ptr<Scenario> scenario)
 {
@@ -22,7 +14,6 @@ void ScenarioManager::addScenario(std::shared_ptr<Scenario> scenario)
 void ScenarioManager::removeScenario(std::shared_ptr<Scenario> scenario)
 {
     scenarios.erase(std::remove(scenarios.begin(), scenarios.end(), scenario), scenarios.end());
-
 }
 
 void ScenarioManager::executeScenarios(bool isLog)

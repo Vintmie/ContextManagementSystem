@@ -1,7 +1,7 @@
 #include "Scenario/Scenario.h"
 #include "FormatOutput.h"
 
-int Scenario::nextId = 0;  // Define the static member variable nextId
+int Scenario::nextId = 0;
 
 Scenario::Scenario() : name(generateUniqueScenarioName()), description("DefaultDescription"), id(nextId++) {}
 
@@ -30,13 +30,12 @@ bool Scenario::execute(bool isLog)
         file_logger->info("Current condition: {}\n", step->getExecutionCondition(), thread_id_str);
         if (step->getExecutionCondition() != ExecutionTypeCondition::UNCONDITIONAL)
         {
-            // CHECK PREVIOUS STATE
             if (prevResult == ResultType::UNKNOWN ||
                 (prevResult == ResultType::SUCCESS && step->getExecutionCondition() == ExecutionTypeCondition::FAILURE) ||
                 (prevResult == ResultType::FAILURE && step->getExecutionCondition() == ExecutionTypeCondition::SUCCESS))
             {
                 break;
-                return false;  // END SCENARIO
+                return false;
             }
         }
         if (step->evaluateCondition(isLog))
@@ -77,4 +76,3 @@ std::string Scenario::generateUniqueScenarioName() const
     oss << "scenario_" << counter++;
     return oss.str();
 }
-

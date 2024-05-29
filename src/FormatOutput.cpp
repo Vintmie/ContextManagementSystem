@@ -1,7 +1,6 @@
 #include "FormatOutput.h"
 #include <sstream>
 
-// Define the thread-local variable
 thread_local std::string thread_id_str;
 
 std::shared_ptr<spdlog::logger> LoggerManager::file_logger = nullptr;
@@ -39,7 +38,6 @@ void LoggerManager::initializeFile()
     file_logger->flush_on(spdlog::level::info);
 }
 
-
 void LoggerManager::initializeRegularFiles(size_t count)
 {
     std::lock_guard<std::mutex> lock(logger_mutex);
@@ -52,7 +50,7 @@ std::shared_ptr<spdlog::logger>& LoggerManager::getThreadFileLogger(bool notThre
 {
     if (notThread == true)
     {
-        return getFileLogger(true);  // Call getFileLogger if flag is false
+        return getFileLogger(true);
     }
 
     std::lock_guard<std::mutex> lock(logger_mutex);

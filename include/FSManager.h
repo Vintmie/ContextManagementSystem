@@ -36,12 +36,10 @@ private:
     std::string filePath = "..\\bin\\default.json";
     static const std::string path;
 
-    // nlohmann::json scenarioToJson(const Scenario& scenario) const;
     nlohmann::json stepToJson(const ScenarioStep& step) const;
     nlohmann::json conditionToJson(const IConditional& condition) const;
     nlohmann::json taskToJson(const ITask& task) const;
 
-    // std::shared_ptr<Scenario> jsonToScenario(const nlohmann::json& j) const;
     std::shared_ptr<ScenarioStep> jsonToStep(const nlohmann::json& j) const;
     std::unique_ptr<IConditional> jsonToCondition(const nlohmann::json& j) const;
     std::unique_ptr<ITask> jsonToTask(const nlohmann::json& j) const;
