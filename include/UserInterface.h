@@ -51,5 +51,5 @@ private:
     std::atomic<bool> stopPeriodicExecutionFlag; // Flag to stop the periodic execution
 
     std::set<int> runningScenarioIds;  // Declare the set to store running scenario IDs
-    //static const int MAX_THREADS;
+    static const int MAX_THREADS;
 };

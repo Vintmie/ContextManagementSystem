@@ -11,8 +11,13 @@
 #include <set>
 #include <chrono>
 #include "FormatOutput.h"
+#include "SystemInfo.h"
 #include <functional>
 #include <sstream>
+
+
+//const int UserInterface::MAX_THREADS = SystemInfo::GetMaxThreads();
+const int UserInterface::MAX_THREADS = 3;
 
 UserInterface::UserInterface()
     : scenarioManager(std::make_unique<ScenarioManager>()),
@@ -21,8 +26,6 @@ UserInterface::UserInterface()
       periodicExecutionThreads(), stopPeriodicExecutionFlag(false)
 {
     LoggerManager::initializeFile();
-    //LoggerManager::initializeRegularFile();
-    LoggerManager::initializeRegularFiles(6);
 }
 
 void clearScreen()
@@ -105,8 +108,15 @@ void UserInterface::startPeriodicExecution()
             }
         }
     }
+    std::cout << "Максимальна кількість одночасно запущених сценаріїв може становити: " << MAX_THREADS << "\n";
+    // Check if the maximum number of threads is reached
+    if (runningScenarioIds.size() >= MAX_THREADS)
+    {
+        std::cout << "Максимальна кількість потоків (" << MAX_THREADS << ") вже запущена.\n";
+        return;
+    }
 
-    // Показ списку сценаріїв для вибору
+    // Display the list of scenarios for selection
     std::cout << "Доступні сценарії для вибору:\n";
     int index = 1;
     for (const auto& scenario : uniqueScenarios)
@@ -133,40 +143,48 @@ void UserInterface::startPeriodicExecution()
     if (runningScenarioIds.find(scenarioId) != runningScenarioIds.end())
     {
         std::cout << "Цей сценарій вже запущений.\n";
-
         return;
     }
 
-    scenarioPeriodicManager->addScenario(selectedScenario);
+    // Create a new thread only if the maximum number of threads is not reached
+    if (runningScenarioIds.size() < MAX_THREADS)
+    {
+        scenarioPeriodicManager->addScenario(selectedScenario);
 
-    stopPeriodicExecutionFlag = false;
+        stopPeriodicExecutionFlag = false;
 
-    periodicExecutionThreads.emplace_back(
-        [this, selectedScenario, scenarioId]()
-        {
-            auto file_logger = LoggerManager::getThreadFileLogger(false);
-            std::thread::id thread_id = std::this_thread::get_id();
-            std::ostringstream oss;
-            oss << thread_id;
-            thread_id_str = oss.str();  // Set the thread-local thread_id_str
-
-            std::unique_lock<std::mutex> lk(cv_m);
-            while (!stopPeriodicExecutionFlag)
+        periodicExecutionThreads.emplace_back(
+            [this, selectedScenario, scenarioId]()
             {
-                file_logger->info("======= Scenario {} start\n", selectedScenario->getName(), thread_id_str);
-                selectedScenario->execute(false);
-                file_logger->info("Scenario {} end =======\n", selectedScenario->getName(), thread_id_str);
-                if (cv.wait_for(lk, std::chrono::minutes(1), [this] { return stopPeriodicExecutionFlag.load(); })) break;
-            }
+                auto file_logger = LoggerManager::getThreadFileLogger(false);
+                std::thread::id thread_id = std::this_thread::get_id();
+                std::ostringstream oss;
+                oss << thread_id;
+                thread_id_str = oss.str();  // Set the thread-local thread_id_str
 
-            // Remove the scenario ID from the set of running scenario IDs
-            runningScenarioIds.erase(scenarioId);
-        });
+                std::unique_lock<std::mutex> lk(cv_m);
+                while (!stopPeriodicExecutionFlag)
+                {
+                    file_logger->info("======= Scenario {} start\n", selectedScenario->getName(), thread_id_str);
+                    selectedScenario->execute(false);
+                    file_logger->info("Scenario {} end =======\n", selectedScenario->getName(), thread_id_str);
+                    if (cv.wait_for(lk, std::chrono::minutes(1), [this] { return stopPeriodicExecutionFlag.load(); })) break;
+                }
 
-    // Add the scenario ID to the set of running scenario IDs
-    runningScenarioIds.insert(scenarioId);
+                // Remove the scenario ID from the set of running scenario IDs
+                runningScenarioIds.erase(scenarioId);
+            });
 
-    std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожну хвилину.\n";
+        // Add the scenario ID to the set of running scenario IDs
+        runningScenarioIds.insert(scenarioId);
+
+        std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожну хвилину.\n";
+    }
+    else
+    {
+        std::cout << "Максимальна кількість потоків (" << MAX_THREADS << ") вже запущена.\n";
+    }
+
     std::cout << "Натисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
@@ -573,6 +591,7 @@ void UserInterface::showRunningScenarios()
 
     if (hasRunningScenarios)
     {
+        std::cout << "Максимальна кількість одночасно запущених сценаріїв повинна бути не більшою за: " << MAX_THREADS << "\n";
         std::cout << "Запущені сценарії:\n";
         int index = 1;
         for (const auto& scenario : scenarioPeriodicManager->getScenarios())
