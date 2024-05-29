@@ -3,22 +3,18 @@
 #include <windows.h>
 #include <iostream>
 #include <taskschd.h>
-#include <comdef.h>  // Include this header for _variant_t and _bstr_t
+#include <comdef.h>
 #include "Utils.h"
 
 #pragma comment(lib, "taskschd.lib")
 #pragma comment(lib, "comsupp.lib")
 
-// Function to get the current time + additional seconds as a formatted string
 std::string getFutureTime(int additionalSeconds)
 {
-    // Get the current time
     std::time_t currentTime = std::time(nullptr);
 
-    // Add additional seconds
     currentTime += additionalSeconds;
 
-    // Convert to tm structure using localtime_s
     std::tm tm_result;
     localtime_s(&tm_result, &currentTime);
 
@@ -32,7 +28,7 @@ ResultType ScheduleTask::execute(bool isLog)
 {
 
     std::string futureTime = getFutureTime(startUpTime);
-    return scheduleTask(futureTime,isLog);
+    return scheduleTask(futureTime, isLog);
 }
 
 ResultType ScheduleTask::getExecutionResult() const

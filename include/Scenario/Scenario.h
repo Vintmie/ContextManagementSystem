@@ -25,13 +25,12 @@ public:
     std::string getDescription() const;
 
     int getId() const { return id; }
-    
 
 private:
     std::string generateUniqueScenarioName() const;
     std::vector<std::shared_ptr<ScenarioStep>> steps;
     std::string name;
     std::string description;
-    int id;  // Add a member to store the scenario ID
+    int id;
     static int nextId;
 };

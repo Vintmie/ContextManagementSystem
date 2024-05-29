@@ -15,15 +15,12 @@
 #include <functional>
 #include <sstream>
 
-
-//const int UserInterface::MAX_THREADS = SystemInfo::GetMaxThreads();
-const int UserInterface::MAX_THREADS = 3;
+const int UserInterface::MAX_THREADS = SystemInfo::GetMaxThreads();
 
 UserInterface::UserInterface()
-    : scenarioManager(std::make_unique<ScenarioManager>()),
-      scenarioPeriodicManager(std::make_unique<ScenarioManager>()),
-      fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(), scenarioFileBuffer(),
-      periodicExecutionThreads(), stopPeriodicExecutionFlag(false)
+    : scenarioManager(std::make_unique<ScenarioManager>()), scenarioPeriodicManager(std::make_unique<ScenarioManager>()),
+      fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(), scenarioFileBuffer(), periodicExecutionThreads(),
+      stopPeriodicExecutionFlag(false)
 {
     LoggerManager::initializeFile();
 }
@@ -48,10 +45,10 @@ void UserInterface::showMainMenu()
         std::cout << "3) Менеджер сценаріїв\n";
         std::cout << "4) Завантажити сценарій з файлу\n";
         std::cout << "5) Переглянути завантажені сценарії\n";
-        std::cout << "6) Виконувати сценарій кожну хвилину\n";  // New menu option
-        std::cout << "7) Переглянути запущені сценарії\n";      // New menu option
-        std::cout << "8) Зупинити виконання запущеного сценарію\n";        // New menu option
-        std::cout << "9) Зупинити виконання усіх запущених сценаріїв\n";        // New menu option
+        std::cout << "6) Виконувати сценарій кожну хвилину\n";
+        std::cout << "7) Переглянути запущені сценарії\n";
+        std::cout << "8) Зупинити виконання запущеного сценарію\n";
+        std::cout << "9) Зупинити виконання усіх запущених сценаріїв\n";
         std::cout << "10) Вихід з програми\n";
         std::cin >> choice;
 
@@ -64,10 +61,10 @@ void UserInterface::showMainMenu()
             case 3: executeScenario(); break;
             case 4: loadScenarioFromFile(); break;
             case 5: viewLoadedScenarios(); break;
-            case 6: startPeriodicExecution(); break;  // New case for starting periodic execution
-            case 7: showRunningScenarios(); break;    // New case for starting periodic execution
-            case 8: stopSelectedScenario(); break;    // New case for stopping periodic execution
-            case 9: stopAllThreads(); break;          // New case for stopping periodic execution
+            case 6: startPeriodicExecution(); break;
+            case 7: showRunningScenarios(); break;
+            case 8: stopSelectedScenario(); break;
+            case 9: stopAllThreads(); break;
             case 10: exitProgram(); break;
             default: std::cout << "Неправильний вибір. Спробуйте ще раз.\n"; break;
         }
@@ -84,7 +81,6 @@ void UserInterface::startPeriodicExecution()
         return;
     }
 
-    // Об'єднання сценаріїв з уникненням дублікатів за назвою
     std::vector<std::shared_ptr<Scenario>> uniqueScenarios;
     std::set<std::string> scenarioNames;
 
@@ -112,7 +108,6 @@ void UserInterface::startPeriodicExecution()
         }
     }
     std::cout << "Максимальна кількість одночасно запущених сценаріїв може становити: " << MAX_THREADS << "\n";
-    // Check if the maximum number of threads is reached
     if (runningScenarioIds.size() >= MAX_THREADS)
     {
         std::cout << "Максимальна кількість потоків (" << MAX_THREADS << ") вже запущена.\n";
@@ -120,7 +115,6 @@ void UserInterface::startPeriodicExecution()
         return;
     }
 
-    // Display the list of scenarios for selection
     std::cout << "Доступні сценарії для вибору:\n";
     int index = 1;
     for (const auto& scenario : uniqueScenarios)
@@ -141,17 +135,14 @@ void UserInterface::startPeriodicExecution()
     }
 
     auto selectedScenario = uniqueScenarios[choice - 1];
-    int scenarioId = selectedScenario->getId();  // Get the ID of the selected scenario
+    int scenarioId = selectedScenario->getId();
 
-    // Check if the selected scenario is already running
     if (runningScenarioIds.find(scenarioId) != runningScenarioIds.end())
     {
         std::cout << "Цей сценарій вже запущений.\n";
         std::this_thread::sleep_for(std::chrono::seconds(1));
         return;
     }
-
-    // Create a new thread only if the maximum number of threads is not reached
     if (runningScenarioIds.size() < MAX_THREADS)
     {
         scenarioPeriodicManager->addScenario(selectedScenario);
@@ -165,7 +156,7 @@ void UserInterface::startPeriodicExecution()
                 std::thread::id thread_id = std::this_thread::get_id();
                 std::ostringstream oss;
                 oss << thread_id;
-                thread_id_str = oss.str();  // Set the thread-local thread_id_str
+                thread_id_str = oss.str();
 
                 std::unique_lock<std::mutex> lk(cv_m);
                 while (!stopPeriodicExecutionFlag)
@@ -176,11 +167,9 @@ void UserInterface::startPeriodicExecution()
                     if (cv.wait_for(lk, std::chrono::minutes(1), [this] { return stopPeriodicExecutionFlag.load(); })) break;
                 }
 
-                // Remove the scenario ID from the set of running scenario IDs
                 runningScenarioIds.erase(scenarioId);
             });
 
-        // Add the scenario ID to the set of running scenario IDs
         runningScenarioIds.insert(scenarioId);
 
         std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожну хвилину.\n";
@@ -201,26 +190,23 @@ void UserInterface::stopPeriodicExecution()
         std::lock_guard<std::mutex> lk(cv_m);
         stopPeriodicExecutionFlag = true;
     }
-    cv.notify_all();  // Notify all waiting threads to stop
+    cv.notify_all();
 
-    // Join the periodic execution threads
     for (auto& thread : periodicExecutionThreads)
     {
         if (thread.joinable())
         {
             try
             {
-                thread.join();  // Join the thread
+                thread.join();
             }
             catch (const std::exception& e)
             {
-                // Handle the exception, you can log it or print an error message
                 std::cerr << "Exception occurred while joining thread: " << e.what() << std::endl;
             }
         }
     }
 
-    // Clear the periodic execution threads vector
     periodicExecutionThreads.clear();
 }
 
@@ -243,11 +229,10 @@ std::unique_ptr<IConditional> createUserDefinedCondition(int condChoice)
     else
     {
         std::cout << "Неправильний вибір. Спробуйте ще раз.\n";
-        return nullptr;  // або обробка помилки, залежно від потреб
+        return nullptr;
     }
 }
 
-// Функція для створення завдання залежно від вибору користувача
 std::unique_ptr<ITask> createUserDefinedTask(int taskChoice)
 {
     if (taskChoice == 1)
@@ -261,7 +246,6 @@ std::unique_ptr<ITask> createUserDefinedTask(int taskChoice)
     else if (taskChoice == 3)
     {
         int sec;
-        // Calculate the future time (e.g., current time + 3600 seconds = 1 hour)
         std::cout << "Введіть час (у секундах), через який відбудеться спрацювання. Після цього оберіть файл.\n";
         std::cin >> sec;
         std::wstring filePath = Utils::OpenFileSelectionDialog(
@@ -271,7 +255,7 @@ std::unique_ptr<ITask> createUserDefinedTask(int taskChoice)
     else
     {
         std::cout << "Неправильний вибір. Спробуйте ще раз.\n";
-        return nullptr;  // або обробка помилки, залежно від потреб
+        return nullptr;
     }
 }
 
@@ -347,11 +331,9 @@ void UserInterface::createScenario()
             break;
         }
     }
-    // ЧИ СФОРМУВАТИ ІНШИЙ СЦЕНАРІЙ???
     scenarioManager->addScenario(scenario);
     scenarioUserBuffer.push_back(scenarioManager);
 
-    // Збереження сценарію у файл
     saveScenarioToFile(scenarioManager);
 }
 
@@ -430,7 +412,6 @@ void UserInterface::executeScenario()
     }
     else
     {
-        // Об'єднання сценаріїв з уникненням дублікатів за назвою
         std::vector<std::shared_ptr<Scenario>> uniqueScenarios;
         std::set<std::string> scenarioNames;
 
@@ -525,7 +506,6 @@ void UserInterface::executeScenario()
                     scenarioManager->addScenario(uniqueScenarios[ch - 1]);
                 }
 
-                // Запит на збереження сценаріїв у файл
                 char save;
                 std::cout << "Зберегти сценарії у файл перед виконанням? (y/n): ";
                 std::cin >> save;
@@ -534,7 +514,6 @@ void UserInterface::executeScenario()
 
                     std::wstring filePath = Utils::SaveFileSelectionDialog(
                         OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу сценарію", L"JSON Files\0*.json\0");
-                    // fsManager->saveScenario(*uniqueScenarios[ch - 1], Utils::wstring_to_utf8(filePath));
                     fsManager->saveScenarios(*scenarioManager, Utils::wstring_to_utf8(filePath));
                     std::cout << "Сценарії збережено у файл.\n";
                     std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -545,7 +524,6 @@ void UserInterface::executeScenario()
                     std::this_thread::sleep_for(std::chrono::seconds(2));
                     clearScreen();
                 }
-                // Виконання сценаріїв
                 scenarioManager->executeScenarios();
             }
             else
@@ -565,7 +543,6 @@ void UserInterface::stopAllThreads()
     {
         std::lock_guard<std::mutex> lk(cv_m);
 
-        // Check if there are any running threads
         if (periodicExecutionThreads.empty())
         {
             std::cout << "Немає запущених сценаріїв для зупинки.\n";
@@ -573,35 +550,29 @@ void UserInterface::stopAllThreads()
             return;
         }
 
-        // Set the flag to true to stop the threads
         stopPeriodicExecutionFlag = true;
     }
-    cv.notify_all();  // Notify all waiting threads to stop
+    cv.notify_all();
 
-    // Join all the periodic execution threads
     for (auto& thread : periodicExecutionThreads)
     {
         if (thread.joinable())
         {
             try
             {
-                thread.join();  // Join the thread
+                thread.join();
             }
             catch (const std::exception& e)
             {
-                // Handle the exception, you can log it or print an error message
                 std::cerr << "Exception occurred while joining thread: " << e.what() << std::endl;
             }
         }
     }
 
-    // Clear the periodic execution threads vector
     periodicExecutionThreads.clear();
 
-    // Clear the set of running scenario IDs
     runningScenarioIds.clear();
 
-    // Remove all scenarios from the manager
     auto scenarios = scenarioPeriodicManager->getScenarios();
     for (const auto& scenario : scenarios)
     {
@@ -611,7 +582,6 @@ void UserInterface::stopAllThreads()
     std::cout << "Всі сценарії зупинено.\n";
     std::this_thread::sleep_for(std::chrono::seconds(2));
 }
-
 
 void UserInterface::exitProgram()
 {
@@ -636,7 +606,6 @@ void UserInterface::showRunningScenarios()
 {
     bool hasRunningScenarios = false;
 
-    // Check if there are any running scenarios
     for (auto& thread : periodicExecutionThreads)
     {
         if (thread.joinable())
@@ -674,18 +643,17 @@ void UserInterface::stopSelectedScenario()
         std::lock_guard<std::mutex> lk(cv_m);
         stopPeriodicExecutionFlag = true;
     }
-    cv.notify_all();  // Notify all waiting threads to stop
+    cv.notify_all();
 
-    // Flag to track if any thread was stopped
     bool threadStopped = false;
 
     for (auto& thread : periodicExecutionThreads)
     {
         if (thread.joinable())
         {
-            thread.join();  // Stop the thread
+            thread.join();
             threadStopped = true;
-            break;  // Stop the loop after stopping one thread
+            break;
         }
     }
 
@@ -695,7 +663,6 @@ void UserInterface::stopSelectedScenario()
     }
     else
     {
-        // Now remove the stopped scenario from the manager
         auto scenarios = scenarioPeriodicManager->getScenarios();
 
         std::cout << "Запущені сценарії:\n";

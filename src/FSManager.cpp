@@ -35,11 +35,9 @@ nlohmann::json FSManager::scenarioToJsonEXTENDED(const Scenario& scenario) const
 {
     nlohmann::json j;
 
-    // Додавання основних полів сценарію
     j["name"] = scenario.getName();
     j["description"] = scenario.getDescription();
 
-    // Додавання кроків сценарію
     for (const auto& step : scenario.getSteps())
     {
         j["steps"].push_back(stepToJson(*step));
@@ -51,7 +49,7 @@ nlohmann::json FSManager::scenarioToJsonEXTENDED(const Scenario& scenario) const
 void FSManager::saveScenario(const Scenario& scenario, const std::string& filePath) const
 {
     nlohmann::json j;
-    // Додавання основних полів сценарію
+
     j = scenarioToJsonEXTENDED(scenario);
 
     std::ofstream outFile(filePath);
@@ -97,11 +95,9 @@ std::shared_ptr<Scenario> FSManager::jsonToScenarioEXTENDED(const nlohmann::json
 {
     auto scenario = std::make_shared<Scenario>();
 
-    // Отримання основних полів сценарію
     scenario->setName(j["name"].get<std::string>());
     scenario->setDescription(j["description"].get<std::string>());
 
-    // Отримання кроків сценарію
     for (const auto& stepJson : j["steps"])
     {
         scenario->addStep(jsonToStep(stepJson));
@@ -186,7 +182,7 @@ std::unique_ptr<ITask> FSManager::jsonToTask(const nlohmann::json& j) const
     {
         return std::make_unique<ChangePowerPlanTask>();
     }
-    else if (type == "ScheduleTask")  // Add this block
+    else if (type == "ScheduleTask")
     {
         return std::make_unique<ScheduleTask>();
     }
@@ -205,11 +201,9 @@ void FSManager::loadScenario(std::shared_ptr<Scenario>& scenario, const std::str
     nlohmann::json j;
     inFile >> j;
 
-    // Отримання основних полів сценарію
     scenario->setName(j["name"].get<std::string>());
     scenario->setDescription(j["description"].get<std::string>());
 
-    // Отримання кроків сценарію
     for (const auto& stepJson : j["steps"])
     {
         scenario->addStep(jsonToStep(stepJson));
@@ -231,11 +225,9 @@ void FSManager::saveScenarioDialog(const Scenario& scenario) const
         Utils::SaveFileSelectionDialog(OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу сценарію", L"JSON Files\0*.json\0");
 
     nlohmann::json j;
-    // Додавання основних полів сценарію
     j["name"] = scenario.getName();
     j["description"] = scenario.getDescription();
 
-    // Додавання кроків сценарію
     for (const auto& step : scenario.getSteps())
     {
         j["steps"].push_back(stepToJson(*step));
@@ -267,7 +259,6 @@ void FSManager::loadScenarioDialog(std::shared_ptr<Scenario>& scenario) const
     nlohmann::json j;
     inFile >> j;
 
-    // Отримання основних полів сценарію
     scenario->setName(j["name"].get<std::string>());
     scenario->setDescription(j["description"].get<std::string>());
 
@@ -286,7 +277,6 @@ void FSManager::saveScenarioDetails(const Scenario& scenario, const std::string&
     nlohmann::json j;
     j["name"] = scenario.getName();
     j["description"] = scenario.getDescription();
-    // Додавання кроків сценарію
     for (const auto& step : scenario.getSteps())
     {
         j["steps"].push_back(stepToJson(*step));
@@ -315,11 +305,9 @@ void FSManager::loadScenarioDetails(Scenario& scenario, const std::string& fileP
     nlohmann::json j;
     inFile >> j;
 
-    // Завантаження імені та опису сценарію
     scenario.setName(j["name"]);
     scenario.setDescription(j["description"]);
 
-    // Завантаження кроків сценарію
     for (const auto& stepJson : j["scenario"]["steps"])
     {
         scenario.addStep(jsonToStep(stepJson));
@@ -327,23 +315,3 @@ void FSManager::loadScenarioDetails(Scenario& scenario, const std::string& fileP
 
     inFile.close();
 }
-
-// std::shared_ptr<Scenario> FSManager::jsonToScenario(const nlohmann::json& j) const
-//{
-//     auto scenario = std::make_shared<Scenario>();
-//     for (const auto& stepJson : j["steps"])
-//     {
-//         scenario->addStep(jsonToStep(stepJson));
-//     }
-//     return scenario;
-// }
-
-// nlohmann::json FSManager::scenarioToJson(const Scenario& scenario) const
-//{
-//     nlohmann::json j;
-//     for (const auto& step : scenario.getSteps())
-//     {
-//         j["steps"].push_back(stepToJson(*step));
-//     }
-//     return j;
-// }

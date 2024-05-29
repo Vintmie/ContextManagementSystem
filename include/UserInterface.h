@@ -9,7 +9,7 @@
 #include <thread>
 #include <atomic>
 #include <condition_variable>
-#include <set> 
+#include <set>
 
 class UserInterface
 {
@@ -26,13 +26,11 @@ private:
 
     void showRunningScenarios();
 
-
     void startPeriodicExecution();
-    void stopPeriodicExecution();  // New method to stop the periodic execution
+    void stopPeriodicExecution();
     void exitProgram();
-    void stopSelectedScenario();  // Додаємо оголошення нового методу
+    void stopSelectedScenario();
     void stopAllThreads();
-
 
     void saveScenarioToFile(const std::shared_ptr<ScenarioManager>& scenario);
     void loadScenarioFromFile();
@@ -44,14 +42,12 @@ private:
     std::unique_ptr<FSManager> fsManager;
     std::vector<std::shared_ptr<ScenarioManager>> scenarioUserBuffer;
     std::vector<std::shared_ptr<ScenarioManager>> scenarioFileBuffer;
-    
-
 
     std::condition_variable cv;
     std::mutex cv_m;
-    std::vector<std::thread> periodicExecutionThreads;  // Thread for periodic execution
-    std::atomic<bool> stopPeriodicExecutionFlag; // Flag to stop the periodic execution
+    std::vector<std::thread> periodicExecutionThreads;
+    std::atomic<bool> stopPeriodicExecutionFlag;
 
-    std::set<int> runningScenarioIds;  // Declare the set to store running scenario IDs
+    std::set<int> runningScenarioIds;
     static const int MAX_THREADS;
 };

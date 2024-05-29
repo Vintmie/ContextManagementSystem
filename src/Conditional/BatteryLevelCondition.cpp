@@ -37,6 +37,6 @@ int BatteryLevelCondition::getBatteryLevel() const
     else
     {
         std::cerr << "Failed to retrieve battery level." << std::endl;
-        return -1;  // Error code
+        return -1;
     }
 }

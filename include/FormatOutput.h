@@ -47,14 +47,11 @@ struct fmt::formatter<ExecutionTypeCondition>
             case ExecutionTypeCondition::FAILURE: return fmt::format_to(ctx.out(), "FAILURE");
             case ExecutionTypeCondition::UNCONDITIONAL: return fmt::format_to(ctx.out(), "UNCONDITIONAL");
         }
-        // Return a default message in case none of the cases matched
         return fmt::format_to(ctx.out(), "INVALID_CONDITION_TYPE");
     }
 };
 
-
 extern thread_local std::string thread_id_str;
-
 
 class LoggerManager
 {
