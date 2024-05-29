@@ -31,7 +31,7 @@ void ScenarioManager::executeScenarios(bool isLog)
     for (const auto& scenario : scenarios)
     {
 
-        auto file_logger = LoggerManager::getThreadFileLogger();
+        auto file_logger = LoggerManager::getThreadFileLogger(isLog);
         if (isLog != false)
         {
             spdlog::info("======= Scenario {} start\n", scenario->getName());

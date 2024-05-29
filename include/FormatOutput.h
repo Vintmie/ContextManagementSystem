@@ -63,7 +63,7 @@ public:
     static void initializeFile();
     static void initializeRegularFiles(size_t count);
     static std::shared_ptr<spdlog::logger>& getFileLogger(bool isNotRegular = true);
-    static std::shared_ptr<spdlog::logger>& getThreadFileLogger();
+    static std::shared_ptr<spdlog::logger>& getThreadFileLogger(bool notThread = true);
 
 private:
     static std::shared_ptr<spdlog::logger> file_logger;

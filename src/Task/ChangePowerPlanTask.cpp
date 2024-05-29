@@ -107,7 +107,7 @@ ResultType ChangePowerPlanTask::getExecutionResult() const
 ResultType ChangePowerPlanTask::changePowerPlan(bool isLog)
 {
     auto res_logger = LoggerManager::get_unique_logger();
-    auto file_logger = LoggerManager::getThreadFileLogger();
+    auto file_logger = LoggerManager::getThreadFileLogger(isLog);
     // std::cout << "Available Power Plans:" << std::endl;
     std::vector<std::wstring> powerPlans = GetAvailablePowerPlans();
 
