@@ -46,6 +46,6 @@ private:
 
     std::condition_variable cv;
     std::mutex cv_m;
-    std::thread periodicExecutionThread; // Thread for periodic execution
+    std::vector<std::thread> periodicExecutionThreads;  // Thread for periodic execution
     std::atomic<bool> stopPeriodicExecutionFlag; // Flag to stop the periodic execution
 };
