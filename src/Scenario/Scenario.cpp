@@ -1,9 +1,10 @@
 #include "Scenario/Scenario.h"
 #include "FormatOutput.h"
 
-Scenario::Scenario() : name(generateUniqueScenarioName()), description("DefaultDescription") {}
 
-Scenario::Scenario(const std::string& name, const std::string& description) : name(name), description(description) {}
+Scenario::Scenario() : name(generateUniqueScenarioName()), description("DefaultDescription"){}
+
+Scenario::Scenario(const std::string& name, const std::string& description) : name(name), description(description){}
 
 void Scenario::addStep(std::shared_ptr<ScenarioStep> step)
 {
@@ -76,3 +77,4 @@ std::string Scenario::generateUniqueScenarioName() const
     oss << "scenario_" << counter++;
     return oss.str();
 }
+

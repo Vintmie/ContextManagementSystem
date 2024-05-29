@@ -3,6 +3,9 @@
 #include <memory>
 #include <string>
 #include "ScenarioStep.h"
+#include <thread>
+#include <atomic>
+#include <condition_variable>
 
 class Scenario
 {
@@ -21,9 +24,13 @@ public:
     void setDescription(const std::string& description);
     std::string getDescription() const;
 
+
+    
+
 private:
     std::string generateUniqueScenarioName() const;
     std::vector<std::shared_ptr<ScenarioStep>> steps;
     std::string name;
     std::string description;
+
 };

@@ -17,8 +17,8 @@
 UserInterface::UserInterface()
     : scenarioManager(std::make_unique<ScenarioManager>()),
       scenarioPeriodicManager(std::make_unique<ScenarioManager>()),
-      fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(),
-      scenarioFileBuffer(), stopPeriodicExecutionFlag(false)
+      fsManager(std::make_unique<FSManager>()), scenarioUserBuffer(), scenarioFileBuffer(),
+      periodicExecutionThreads(), stopPeriodicExecutionFlag(false)
 {
     LoggerManager::initializeFile();
     //LoggerManager::initializeRegularFile();
@@ -131,7 +131,7 @@ void UserInterface::startPeriodicExecution()
 
     stopPeriodicExecutionFlag = false;
 
-    periodicExecutionThread = std::thread(
+   periodicExecutionThreads.emplace_back(
         [this, selectedScenario]()
         {
             auto file_logger = LoggerManager::getThreadFileLogger(false);
@@ -145,7 +145,7 @@ void UserInterface::startPeriodicExecution()
             {
                 file_logger->info("======= Scenario {} start\n", selectedScenario->getName(), thread_id_str);
                 selectedScenario->execute(false);
-                file_logger->info("Scenario {} end =======\n", selectedScenario->getName(),thread_id_str);
+                file_logger->info("Scenario {} end =======\n", selectedScenario->getName(), thread_id_str);
                 if (cv.wait_for(lk, std::chrono::minutes(1), [this] { return stopPeriodicExecutionFlag.load(); })) break;
             }
         });
@@ -158,20 +158,32 @@ void UserInterface::startPeriodicExecution()
 
 void UserInterface::stopPeriodicExecution()
 {
-    if (periodicExecutionThread.joinable())
     {
+        std::lock_guard<std::mutex> lk(cv_m);
+        stopPeriodicExecutionFlag = true;
+    }
+    cv.notify_all();  // Notify all waiting threads to stop
+
+    // Display the status of scenarios only once
+    bool hasRunningScenarios = false;
+    for (auto& thread : periodicExecutionThreads)
+    {
+        if (thread.joinable())
         {
-            std::lock_guard<std::mutex> lk(cv_m);
-            stopPeriodicExecutionFlag = true;
+            hasRunningScenarios = true;
+            break;
         }
-        cv.notify_one();
-        periodicExecutionThread.join();
-        std::cout << "Виконання сценарію зупинено.\n";
+    }
+
+    if (hasRunningScenarios)
+    {
+        std::cout << "Зупинено виконання сценаріїв.\n";
     }
     else
     {
-        std::cout << "Немає активного виконання сценарію.\n";
+        std::cout << "Немає активного виконання сценаріїв.\n";
     }
+
     std::cout << "Натисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
@@ -410,42 +422,6 @@ void UserInterface::executeScenario()
                 }
             }
         }
-
-        // Показ списку сценаріїв для виконання
-        std::cout << "Доступні сценарії для виконання:\n";
-        int index = 1;
-        for (const auto& scenario : uniqueScenarios)
-        {
-            int index = 1;
-            for (const auto& scenario : uniqueScenarios)
-            {
-                std::cout << index << ") " << scenario->getName();
-                std::cout << ": " << scenario->getDescription() << "\n";
-                std::cout << "\n      Назва: " << scenario->getName() << "\n";
-                std::cout << "      Опис : " << scenario->getDescription() << "\n";
-                bool isFirstStep = true;
-                for (const auto& step : scenario->getSteps())
-                {
-                    std::cout << "           - Умова: ";
-                    printConditionInfo(step);
-                    std::cout << "             Завдання: ";
-                    printTaskInfo(step);
-                    if (!isFirstStep)
-                    {
-                        std::cout << "            Виконується ";
-                        switch (step->getExecutionCondition())
-                        {
-                            case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
-                            case ExecutionTypeCondition::FAILURE: std::cout << "якщо попередній завершився невдало!\n"; break;
-                            case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "за будь-яких умов!\n"; break;
-                        }
-                    }
-                    isFirstStep = false;
-                }
-                ++index;
-            }
-        }
-
         char start;
         std::cout << "Сформувати перелік сценаріїв для виконання? (y/n): ";
         std::cin >> start;
@@ -460,7 +436,7 @@ void UserInterface::executeScenario()
             int index = 1;
             for (const auto& scenario : uniqueScenarios)
             {
-                std::cout << index << ") " << scenario->getName();
+                std::cout << "" << index << ") " << scenario->getName();
                 std::cout << ": " << scenario->getDescription() << "\n";
                 std::cout << "\n      Назва: " << scenario->getName() << "\n";
                 std::cout << "      Опис : " << scenario->getDescription() << "\n";
@@ -473,7 +449,7 @@ void UserInterface::executeScenario()
                     printTaskInfo(step);
                     if (!isFirstStep)
                     {
-                        std::cout << "            Виконується ";
+                        std::cout << "             Виконується ";
                         switch (step->getExecutionCondition())
                         {
                             case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
@@ -571,9 +547,20 @@ void UserInterface::displayTasks() const
 
 void UserInterface::showRunningScenarios()
 {
-    // Перевірка, чи є запущені сценарії
-    if (periodicExecutionThread.joinable())
-    {   
+    bool hasRunningScenarios = false;
+
+    // Check if there are any running scenarios
+    for (auto& thread : periodicExecutionThreads)
+    {
+        if (thread.joinable())
+        {
+            hasRunningScenarios = true;
+            break;
+        }
+    }
+
+    if (hasRunningScenarios)
+    {
         std::cout << "Запущені сценарії:\n";
         int index = 1;
         for (const auto& scenario : scenarioPeriodicManager->getScenarios())
@@ -587,6 +574,7 @@ void UserInterface::showRunningScenarios()
     {
         std::cout << "Запущених сценаріїв немає.\n";
     }
+
     std::cout << "\nНатисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
@@ -594,11 +582,36 @@ void UserInterface::showRunningScenarios()
 
 void UserInterface::stopSelectedScenario()
 {
-    if (periodicExecutionThread.joinable())
     {
+        std::lock_guard<std::mutex> lk(cv_m);
+        stopPeriodicExecutionFlag = true;
+    }
+    cv.notify_all();  // Notify all waiting threads to stop
+
+    // Flag to track if any thread was stopped
+    bool threadStopped = false;
+
+    for (auto& thread : periodicExecutionThreads)
+    {
+        if (thread.joinable())
+        {
+            thread.join();  // Stop the thread
+            threadStopped = true;
+            break;  // Stop the loop after stopping one thread
+        }
+    }
+
+    if (!threadStopped)
+    {
+        std::cout << "Запущених сценаріїв немає.\n";
+    }
+    else
+    {
+        // Now remove the stopped scenario from the manager
+        auto scenarios = scenarioPeriodicManager->getScenarios();
+
         std::cout << "Запущені сценарії:\n";
         int index = 1;
-        auto scenarios = scenarioPeriodicManager->getScenarios();
         for (const auto& scenario : scenarios)
         {
             std::cout << index << ") " << scenario->getName();
@@ -617,19 +630,10 @@ void UserInterface::stopSelectedScenario()
         }
 
         auto selectedScenario = scenarios[choice - 1];
-        {
-            std::lock_guard<std::mutex> lk(cv_m);
-            stopPeriodicExecutionFlag = true;
-        }
-        cv.notify_one();
-        periodicExecutionThread.join();
         scenarioPeriodicManager->removeScenario(selectedScenario);
         std::cout << "Виконання обраного сценарію зупинено.\n";
     }
-    else
-    {
-        std::cout << "Запущених сценаріїв немає.\n";
-    }
+
     std::cout << "Натисніть Enter для повернення до головного меню...";
     std::cin.ignore(32767, '\n');
     std::cin.get();
