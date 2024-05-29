@@ -21,7 +21,7 @@ private:
     void createScenario();
     void viewScenarios();
     void executeScenario();
-      void displayConditionals() const;
+    void displayConditionals() const;
     void displayTasks() const;
 
     void showRunningScenarios();
@@ -31,6 +31,8 @@ private:
     void stopPeriodicExecution();  // New method to stop the periodic execution
     void exitProgram();
     void stopSelectedScenario();  // Додаємо оголошення нового методу
+    void stopAllThreads();
+
 
     void saveScenarioToFile(const std::shared_ptr<ScenarioManager>& scenario);
     void loadScenarioFromFile();

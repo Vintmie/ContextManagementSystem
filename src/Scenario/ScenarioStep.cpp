@@ -23,6 +23,7 @@ bool ScenarioStep::evaluateCondition(bool isLog) const
     {
         return false;
     }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     return condition->evaluate(isLog);
 }
 
