@@ -4,6 +4,7 @@
 #include "Task/ChangePowerPlanTask.h"
 #include "Task/MessageBoxTask.h"
 #include "Task/ScheduleTask.h"
+#include "Task/CaptureScreenTask.h"
 #include "FSManager.h"
 #include <iostream>
 #include <cstdlib>
@@ -266,6 +267,13 @@ std::unique_ptr<ITask> createUserDefinedTask(int taskChoice)
             OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, L"Виберіть файл для планування", L"Exe\0*.exe\0");
         return std::make_unique<ScheduleTask>(sec, filePath);
     }
+    else if (taskChoice == 4)
+    {
+        std::cout << "Вкажіть назву й оберіть шлях для скріншоту.\n";
+        std::wstring filePath = Utils::SaveFileSelectionDialog(
+            OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу скріншоту", L"BMP Files\0*.bmp\0");
+        return std::make_unique<CaptureScreenTask>(filePath);
+    }
     else
     {
         std::cout << "Неправильний вибір. Спробуйте ще раз.\n";
@@ -376,6 +384,10 @@ void printTaskInfo(const std::shared_ptr<ScenarioStep>& step)
     else if (dynamic_cast<const ScheduleTask*>(step->getTask()))
     {
         std::cout << "ScheduleTask\n";
+    }
+    else if (dynamic_cast<const CaptureScreenTask*>(step->getTask()))
+    {
+        std::cout << "CaptureScreenTask\n";
     }
 }
 
@@ -614,6 +626,7 @@ void UserInterface::displayTasks() const
     std::cout << "1) ChangePowerPlanTask\n";
     std::cout << "2) MessageBoxTask\n";
     std::cout << "3) ScheduleTask\n";
+    std::cout << "4) CaptureScreenTask\n";
 }
 
 void UserInterface::showRunningScenarios()

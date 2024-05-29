@@ -5,6 +5,7 @@
 #include "Task/MessageBoxTask.h"
 #include "Task/ChangePowerPlanTask.h"
 #include "Task/ScheduleTask.h"
+#include "Task/CaptureScreenTask.h"
 #include <fstream>
 
 const std::string FSManager::path = "..\\bin\\";
@@ -164,9 +165,13 @@ nlohmann::json FSManager::taskToJson(const ITask& task) const
     {
         j["type"] = "ChangePowerPlanTask";
     }
-    else if (const auto* scheduleTask = dynamic_cast<const ScheduleTask*>(&task))  // Add this block
+    else if (const auto* scheduleTask = dynamic_cast<const ScheduleTask*>(&task))
     {
         j["type"] = "ScheduleTask";
+    }
+    else if (const auto* captureScreenTask = dynamic_cast<const CaptureScreenTask*>(&task))
+    {
+        j["type"] = "CaptureScreenTask";
     }
     return j;
 }
@@ -185,6 +190,10 @@ std::unique_ptr<ITask> FSManager::jsonToTask(const nlohmann::json& j) const
     else if (type == "ScheduleTask")
     {
         return std::make_unique<ScheduleTask>();
+    }
+    else if (type == "CaptureScreenTask")
+    {
+        return std::make_unique<CaptureScreenTask>();
     }
     return nullptr;
 }
