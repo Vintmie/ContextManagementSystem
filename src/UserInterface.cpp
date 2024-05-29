@@ -601,6 +601,13 @@ void UserInterface::stopAllThreads()
     // Clear the set of running scenario IDs
     runningScenarioIds.clear();
 
+    // Remove all scenarios from the manager
+    auto scenarios = scenarioPeriodicManager->getScenarios();
+    for (const auto& scenario : scenarios)
+    {
+        scenarioPeriodicManager->removeScenario(scenario);
+    }
+
     std::cout << "Всі сценарії зупинено.\n";
     std::this_thread::sleep_for(std::chrono::seconds(2));
 }
