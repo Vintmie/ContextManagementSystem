@@ -50,8 +50,9 @@ void UserInterface::showMainMenu()
         std::cout << "5) Переглянути завантажені сценарії\n";
         std::cout << "6) Виконувати сценарій кожну хвилину\n";  // New menu option
         std::cout << "7) Переглянути запущені сценарії\n";      // New menu option
-        std::cout << "8) Зупинити виконання сценарію\n";        // New menu option
-        std::cout << "9) Вихід з програми\n";
+        std::cout << "8) Зупинити виконання запущеного сценарію\n";        // New menu option
+        std::cout << "9) Зупинити виконання усіх запущених сценаріїв\n";        // New menu option
+        std::cout << "10) Вихід з програми\n";
         std::cin >> choice;
 
         clearScreen();
@@ -66,10 +67,11 @@ void UserInterface::showMainMenu()
             case 6: startPeriodicExecution(); break;  // New case for starting periodic execution
             case 7: showRunningScenarios(); break;    // New case for starting periodic execution
             case 8: stopSelectedScenario(); break;    // New case for stopping periodic execution
-            case 9: exitProgram(); break;
+            case 9: stopAllThreads(); break;          // New case for stopping periodic execution
+            case 10: exitProgram(); break;
             default: std::cout << "Неправильний вибір. Спробуйте ще раз.\n"; break;
         }
-    } while (choice != 9);
+    } while (choice != 10);
 }
 
 void UserInterface::startPeriodicExecution()
@@ -78,6 +80,7 @@ void UserInterface::startPeriodicExecution()
     if (scenarioUserBuffer.empty() && scenarioFileBuffer.empty())
     {
         std::cout << "Доступних сценаріїв для виконання немає\n";
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         return;
     }
 
@@ -113,6 +116,7 @@ void UserInterface::startPeriodicExecution()
     if (runningScenarioIds.size() >= MAX_THREADS)
     {
         std::cout << "Максимальна кількість потоків (" << MAX_THREADS << ") вже запущена.\n";
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         return;
     }
 
@@ -143,6 +147,7 @@ void UserInterface::startPeriodicExecution()
     if (runningScenarioIds.find(scenarioId) != runningScenarioIds.end())
     {
         std::cout << "Цей сценарій вже запущений.\n";
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         return;
     }
 
@@ -466,8 +471,7 @@ void UserInterface::executeScenario()
             int index = 1;
             for (const auto& scenario : uniqueScenarios)
             {
-                std::cout << "" << index << ") " << scenario->getName();
-                std::cout << ": " << scenario->getDescription() << "\n";
+                std::cout << "" << index << ") ";
                 std::cout << "\n      Назва: " << scenario->getName() << "\n";
                 std::cout << "      Опис : " << scenario->getDescription() << "\n";
                 bool isFirstStep = true;
@@ -533,12 +537,12 @@ void UserInterface::executeScenario()
                     // fsManager->saveScenario(*uniqueScenarios[ch - 1], Utils::wstring_to_utf8(filePath));
                     fsManager->saveScenarios(*scenarioManager, Utils::wstring_to_utf8(filePath));
                     std::cout << "Сценарії збережено у файл.\n";
-                    std::this_thread::sleep_for(std::chrono::seconds(3));
+                    std::this_thread::sleep_for(std::chrono::seconds(2));
                     clearScreen();
                 }
                 else
                 {
-                    std::this_thread::sleep_for(std::chrono::seconds(3));
+                    std::this_thread::sleep_for(std::chrono::seconds(2));
                     clearScreen();
                 }
                 // Виконання сценаріїв
@@ -555,6 +559,52 @@ void UserInterface::executeScenario()
     std::cin.ignore(32767, '\n');
     std::cin.get();
 }
+
+void UserInterface::stopAllThreads()
+{
+    {
+        std::lock_guard<std::mutex> lk(cv_m);
+
+        // Check if there are any running threads
+        if (periodicExecutionThreads.empty())
+        {
+            std::cout << "Немає запущених сценаріїв для зупинки.\n";
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            return;
+        }
+
+        // Set the flag to true to stop the threads
+        stopPeriodicExecutionFlag = true;
+    }
+    cv.notify_all();  // Notify all waiting threads to stop
+
+    // Join all the periodic execution threads
+    for (auto& thread : periodicExecutionThreads)
+    {
+        if (thread.joinable())
+        {
+            try
+            {
+                thread.join();  // Join the thread
+            }
+            catch (const std::exception& e)
+            {
+                // Handle the exception, you can log it or print an error message
+                std::cerr << "Exception occurred while joining thread: " << e.what() << std::endl;
+            }
+        }
+    }
+
+    // Clear the periodic execution threads vector
+    periodicExecutionThreads.clear();
+
+    // Clear the set of running scenario IDs
+    runningScenarioIds.clear();
+
+    std::cout << "Всі сценарії зупинено.\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+}
+
 
 void UserInterface::exitProgram()
 {
