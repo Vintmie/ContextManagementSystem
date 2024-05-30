@@ -1,6 +1,7 @@
 {
   "dependencies": [
+    "nlohmann-json",
     "spdlog",
-    "nlohmann-json"
+    "pdcurses"
   ]
 }

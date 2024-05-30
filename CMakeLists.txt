@@ -8,6 +8,9 @@ project(ContextManagementSystem
 find_package(spdlog CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
+# This is heuristically generated, and may not be correct(!)
+find_package(unofficial-pdcurses CONFIG REQUIRED)
+
 # Set ContextManagementSystem as the startup project (for Visual Studio)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ContextManagementSystem)
 
@@ -29,6 +32,9 @@ target_link_libraries(ContextManagementSystem PRIVATE spdlog::spdlog)
 
 # Link nlohmann_json
 target_link_libraries(ContextManagementSystem PRIVATE nlohmann_json::nlohmann_json)
+
+# Link pdcurses
+target_link_libraries(ContextManagementSystem PRIVATE unofficial::pdcurses::pdcurses)
 
 # Create source groups for filters
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "Source Files" FILES ${SOURCE_FILES})
