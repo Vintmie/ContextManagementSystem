@@ -8,6 +8,7 @@
 #include "FSManager.h"
 #include <iostream>
 #include <cstdlib>
+#include <vector>
 #include <limits>
 #include <set>
 #include <chrono>
@@ -15,6 +16,7 @@
 #include "SystemInfo.h"
 #include <functional>
 #include <sstream>
+#include <curses.h>
 
 const int UserInterface::MAX_THREADS = SystemInfo::GetMaxThreads();
 
@@ -35,42 +37,123 @@ void clearScreen()
 #endif
 }
 
-void UserInterface::showMainMenu()
-{
-    int choice;
-    do
-    {
-        clearScreen();
-        std::cout << "1) Створити новий сценарій\n";
-        std::cout << "2) Переглянути створені сценарії\n";
-        std::cout << "3) Менеджер сценаріїв\n";
-        std::cout << "4) Завантажити сценарій з файлу\n";
-        std::cout << "5) Переглянути завантажені сценарії\n";
-        std::cout << "6) Регулярне виконання сценарію\n";
-        std::cout << "7) Переглянути запущені сценарії\n";
-        std::cout << "8) Зупинити виконання запущеного сценарію\n";
-        std::cout << "9) Зупинити виконання усіх запущених сценаріїв\n";
-        std::cout << "10) Вихід з програми\n";
-        std::cin >> choice;
+int menu() {
+    // Initialize curses
+    initscr();
+    start_color();         // Enable color support
+    cbreak();              // Line buffering disabled, Pass on everything to me
+    noecho();              // Don't echo while we do getch
+    keypad(stdscr, TRUE);  // Enable keypad input
 
-        clearScreen();
+    // Define color pairs
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);   // Default color pair
+    init_pair(2, COLOR_BLACK, COLOR_YELLOW);  // Highlighted color pair
+
+    // Get screen dimensions
+    int screen_height, screen_width;
+    getmaxyx(stdscr, screen_height, screen_width);
+
+    // Calculate window position
+    int window_height = 12;
+    int window_width = 40;
+    int window_y = (screen_height - window_height) / 2;
+    int window_x = (screen_width - window_width) / 2;
+
+    // Create a window
+    WINDOW* menuwin = newwin(window_height, window_width, window_y, window_x);
+    box(menuwin, 0, 0);
+    refresh();
+    wrefresh(menuwin);
+
+    // Menu items
+    std::string menu_items[] = {"Create New Scenario", "View Created Scenarios", "Scenario Manager", "Load Scenario From File",
+        "View Loaded Scenarios", "Start Periodic Execution", "Show Running Scenarios", "Stop Selected Scenario", "Stop All Threads",
+        "Exit Program"};
+
+    int choice;
+    int highlight = 0;
+
+    while (1)
+    {
+        // Display menu items
+        for (int i = 0; i < 10; i++)
+        {
+            if (i == highlight)
+            {
+                wattron(menuwin, COLOR_PAIR(2));
+            }
+            else
+            {
+                wattron(menuwin, COLOR_PAIR(1));
+            }
+            mvwprintw(menuwin, i + 1, 1, menu_items[i].c_str());
+            wattroff(menuwin, COLOR_PAIR(1) | COLOR_PAIR(2));
+        }
+        wrefresh(menuwin);
+
+        // Get user input
+        choice = getch();
 
         switch (choice)
         {
-            case 1: createScenario(); break;
-            case 2: viewScenarios(); break;
-            case 3: executeScenario(); break;
-            case 4: loadScenarioFromFile(); break;
-            case 5: viewLoadedScenarios(); break;
-            case 6: startPeriodicExecution(); break;
-            case 7: showRunningScenarios(); break;
-            case 8: stopSelectedScenario(); break;
-            case 9: stopAllThreads(); break;
-            case 10: exitProgram(); break;
-            default: std::cout << "Неправильний вибір. Спробуйте ще раз.\n"; break;
+            case KEY_UP:
+                highlight--;
+                if (highlight < 0)
+                {
+                    highlight = 9;
+                }
+                break;
+            case KEY_DOWN:
+                highlight++;
+                if (highlight > 9)
+                {
+                    highlight = 0;
+                }
+                break;
+            case ' ':  // Space key for selection
+                // Perform action based on the selected item
+                // For now, let's just print the selected item
+                mvprintw(window_y + window_height + 2, window_x, "You chose: %s", menu_items[highlight].c_str());
+                refresh();
+                // Pause for a moment to show the message
+                napms(1000);
+                break;
+            default: break;
         }
-    } while (choice != 10);
+        if (choice == ' ')
+        {
+            break;  // Exit loop on Space key
+        }
+    }
+
+    // Clean up
+    delwin(menuwin);
+    endwin();
+
+    return highlight;
+
 }
+
+void UserInterface::showMainMenu()
+{
+    int choice = menu();
+    switch (choice)
+    {
+        case 0: createScenario(); break;
+        case 1: viewScenarios(); break;
+        case 2: executeScenario(); break;
+        case 3: loadScenarioFromFile(); break;
+        case 4: viewLoadedScenarios(); break;
+        case 5: startPeriodicExecution(); break;
+        case 6: showRunningScenarios(); break;
+        case 7: stopSelectedScenario(); break;
+        case 8: stopAllThreads(); break;
+        case 9: exitProgram(); break;
+        default: std::cout << "Неправильний вибір. Спробуйте ще раз.\n"<<choice; break;
+    }
+
+}
+
 
 void UserInterface::startPeriodicExecution()
 {
