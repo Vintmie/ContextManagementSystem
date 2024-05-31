@@ -27,6 +27,7 @@ private:
 
     std::vector<std::shared_ptr<Scenario>> getUnique(bool isNotThread = true);
 
+    void loadScenariosFromDirectory();
 
     void showRunningScenarios();
 
@@ -54,4 +55,5 @@ private:
 
     std::set<int> runningScenarioIds;
     static const int MAX_THREADS;
+    const std::wstring& directoryPath = L"..\\bin\\start\\";
 };
