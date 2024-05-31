@@ -24,6 +24,9 @@ private:
     size_t displayConditionals() const;
     size_t displayTasks() const;
 
+
+    std::vector<std::shared_ptr<Scenario>>getUnique();
+
     void showRunningScenarios();
 
     void startPeriodicExecution();
