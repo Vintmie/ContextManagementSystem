@@ -19,7 +19,8 @@
 #include <filesystem>
 #include <curses.h>
 
-const int UserInterface::MAX_THREADS = SystemInfo::GetMaxThreads();
+//const int UserInterface::MAX_THREADS = SystemInfo::GetMaxThreads();
+const int UserInterface::MAX_THREADS = 6;
 
 void initCurses()
 {
@@ -49,6 +50,7 @@ UserInterface::UserInterface()
     LoggerManager::initializeFile();
     initCurses();
     loadScenariosFromDirectory();
+    startAutomaticPeriodicExecution(2);
 }
 
 
@@ -1346,6 +1348,9 @@ void UserInterface::showRunningScenarios()
     if (hasRunningScenarios)
     {
         int y = 1;  // Start y-coordinate for printing scenario info
+        wattron(pad, COLOR_PAIR(4));
+        mvwprintw(pad, y++, (screen_width / 2) - 17, "The maximum number of threads [%d]", MAX_THREADS);
+        wattroff(pad, COLOR_PAIR(4));
         mvwprintw(pad, y++, (screen_width / 2) - 10, "RUNNING SCENARIOS");
         mvwprintw(pad, y++, (screen_width / 2) - 12, "USE ↓ and ↑ to scroll");
 
@@ -1400,7 +1405,6 @@ void UserInterface::showRunningScenarios()
         // Initial display of the pad
         prefresh(pad, pad_pos, 0, 0, 0, pad_height_view, pad_width_view);
 
-        // Handle scrolling
         int ch;
         while ((ch = wgetch(stdscr)) != '\n')
         {
@@ -1463,8 +1467,6 @@ void UserInterface::startPeriodicExecution()
         endwin();
         return;
     }
-    //endwin();
-    //echo();
     auto selectedScenario = uniqueScenarios[choice - 1];
     int scenarioId = selectedScenario->getId();
     clear();
@@ -1511,10 +1513,10 @@ void UserInterface::startPeriodicExecution()
                 std::unique_lock<std::mutex> lk(cv_m);
                 while (!stopPeriodicExecutionFlag)
                 {
-                    file_logger->info("======= Scenario {} executes every {} minute(s)\n", selectedScenario->getName(),
+                    file_logger->info("======= Scenario [{}] executes every {} minute(s)\n", selectedScenario->getName(),
                         selectedScenario->getExecutionInterval(), thread_id_str);
                     selectedScenario->execute(false);
-                    file_logger->info("Scenario {} ends but it executes every {} minute(s) =======\n", selectedScenario->getName(),
+                    file_logger->info("Scenario [{}] ends but it executes every {} minute(s) =======\n", selectedScenario->getName(),
                         selectedScenario->getExecutionInterval(),  thread_id_str);
                     if (cv.wait_for(lk, std::chrono::minutes(executionInterval), [this] { return stopPeriodicExecutionFlag.load(); }))
                         break;
@@ -1527,13 +1529,8 @@ void UserInterface::startPeriodicExecution()
         clear();
         mvprintw(13, (screen_width - 75) / 2,
             "Scenario execution has started. The scenario will be executed every %d minutes", executionInterval);
-        //std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожні " << executionInterval << " хвилин.\n";
     }
     
-    // std::cout << "Натисніть Enter для повернення до головного меню...";
-    // std::cin.ignore(32767, '\n');
-    // std::cin.get();
-    //// menu();
     getch();
     clear();
     endwin();
@@ -1629,4 +1626,78 @@ void UserInterface::loadScenariosFromDirectory()
             scenarioFileBuffer.push_back(std::move(scenario));
         }
     }
+}
+
+
+void UserInterface::startAutomaticPeriodicExecution(int executionInterval)
+{
+    clearScreen();
+    if (scenarioFileBuffer.empty())
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        return;
+    }
+
+    std::vector<std::shared_ptr<Scenario>> uniqueScenarios;
+    std::set<std::string> scenarioNames;
+
+    for (const auto& sf : scenarioFileBuffer)
+    {
+        for (const auto& scenario : sf->getScenarios())
+        {
+            if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
+            {
+                uniqueScenarios.push_back(scenario);
+                scenarioNames.insert(scenario->getName());
+            }
+        }
+    }
+
+    for (const auto& scenario : uniqueScenarios)
+    {
+        int scenarioId = scenario->getId();
+
+        if (runningScenarioIds.find(scenarioId) != runningScenarioIds.end())
+        {
+            continue;
+        }
+
+        if (runningScenarioIds.size() < MAX_THREADS)
+        {
+            scenarioPeriodicManager->addScenario(scenario);
+
+            stopPeriodicExecutionFlag = false;
+
+            periodicExecutionThreads.emplace_back(
+                [this, scenario, scenarioId, executionInterval]()
+                {
+                    auto file_logger = LoggerManager::getThreadFileLogger(false);
+                    std::thread::id thread_id = std::this_thread::get_id();
+                    std::ostringstream oss;
+                    oss << thread_id;
+                    thread_id_str = oss.str();
+                    scenario->setExecutionInterval(executionInterval);
+                    std::unique_lock<std::mutex> lk(cv_m);
+                    while (!stopPeriodicExecutionFlag)
+                    {
+                        file_logger->info("======= Scenario [{}] executes every {} minute(s)\n", scenario->getName(),
+                            scenario->getExecutionInterval(), thread_id_str);
+                        scenario->execute(false);
+                        file_logger->info("Scenario [{}] ends but it executes every {} minute(s) =======\n", scenario->getName(),
+                            scenario->getExecutionInterval(), thread_id_str);
+                        if (cv.wait_for(lk, std::chrono::minutes(executionInterval), [this] { return stopPeriodicExecutionFlag.load(); }))
+                            break;
+                    }
+
+                    runningScenarioIds.erase(scenarioId);
+                });
+
+            runningScenarioIds.insert(scenarioId);
+        }
+        else
+        {
+            break;
+        }
+    }
+
 }
