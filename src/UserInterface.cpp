@@ -33,6 +33,10 @@ void initCurses()
     init_pair(2, COLOR_BLACK, COLOR_GREEN);  // Highlighted color pair
     init_pair(3, COLOR_RED, COLOR_BLACK);
     init_pair(4, COLOR_GREEN, COLOR_BLACK); // for logo
+    init_pair(5, COLOR_YELLOW, COLOR_BLACK);   // Cute color pair 5
+    init_pair(6, COLOR_CYAN, COLOR_BLACK);     // Cute color pair 2
+    init_pair(7, COLOR_MAGENTA, COLOR_BLACK);  // Cute color pair 3
+
 }
 
 
@@ -77,9 +81,6 @@ int menu()
     std::string p3 = " ___/ / / /___    / /___    / /|  /   / ___ | / _, _/  _/ /   / /_/ /   ";
     std::string p4 = "/____/  \\____/   /_____/   /_/ |_/   /_/  |_|/_/ |_|  /___/   \\____/    ";
 
-    
-    // Calculate position to center vertically
-    int y_start = (screen_height - 6) / 2;  // 6 is the number of lines in the robot art
 
     mvprintw(window_height - 8,window_x - 10, p0.c_str());
     mvprintw(window_height - 7, window_x - 10, p1.c_str());
@@ -327,11 +328,12 @@ std::unique_ptr<IConditional> createUserDefinedCondition(size_t condChoice)
 {
     int screen_height, screen_width;
     getmaxyx(stdscr, screen_height, screen_width);
+    int window_height = 13;
     if (condChoice == 1)
     {
         int level;
         clear();
-        mvprintw(screen_height / 2 - 2, (screen_width - 35) / 2, "Enter critical battery level: ");
+        mvprintw(window_height, (screen_width - 35) / 2, "Enter critical battery level: ");
         echo();  // Enable echoing
         scanw("%d", &level);
         noecho();  // Disable echoing
@@ -341,7 +343,7 @@ std::unique_ptr<IConditional> createUserDefinedCondition(size_t condChoice)
     {
         int hour;
         clear();
-        mvprintw(screen_height / 2 - 2, (screen_width - 25) / 2, "Enter hour (0-23): ");
+        mvprintw(window_height, (screen_width - 35) / 2, "Enter hour (0-23): ");
         echo();  // Enable echoing
         scanw("%d", &hour);
         noecho();  // Disable echoing
@@ -350,7 +352,7 @@ std::unique_ptr<IConditional> createUserDefinedCondition(size_t condChoice)
     else
     {
         clear();
-        mvprintw(screen_height / 2 - 2, (screen_width - 30) / 2, "Invalid choice. Please try again.");
+        mvprintw(window_height, (screen_width - 35) / 2, "Invalid choice. Please try again.");
         getch();  // Wait for user input
         return nullptr;
     }
@@ -358,6 +360,10 @@ std::unique_ptr<IConditional> createUserDefinedCondition(size_t condChoice)
 
 std::unique_ptr<ITask> createUserDefinedTask(size_t taskChoice)
 {
+    curs_set(1);  // Show cursor
+    int screen_height, screen_width;
+    getmaxyx(stdscr, screen_height, screen_width);
+    int window_height = 13;
     if (taskChoice == 1)
     {
         return std::make_unique<ChangePowerPlanTask>();
@@ -369,22 +375,29 @@ std::unique_ptr<ITask> createUserDefinedTask(size_t taskChoice)
     else if (taskChoice == 3)
     {
         int sec;
-        std::cout << "Введіть час (у секундах), через який відбудеться спрацювання. Після цього оберіть файл.\n";
-        std::cin >> sec;
+        mvprintw(window_height, (screen_width - 90) / 2, "Enter the time (in seconds) after which the trigger will occur. Then select the file");
+        mvprintw(window_height+1 , (screen_width - 90) / 2, "TIME: ");
+        echo();                                            // Enable echoing
+        scanw("%d", &sec);
+        noecho();  // Disable echoing
+      
+
         std::wstring filePath = Utils::OpenFileSelectionDialog(
             OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, L"Виберіть файл для планування", L"Exe\0*.exe\0");
         return std::make_unique<ScheduleTask>(sec, filePath);
     }
     else if (taskChoice == 4)
     {
-        std::cout << "Вкажіть назву й оберіть шлях для скріншоту.\n";
+        mvprintw(
+            window_height, (screen_width - 50) / 2, "Press ENTER, then set the screenshot name.");
+        getch();
         std::wstring filePath = Utils::SaveFileSelectionDialog(
             OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Вкажіть назву файлу скріншоту", L"BMP Files\0*.bmp\0");
         return std::make_unique<CaptureScreenTask>(filePath);
     }
     else
     {
-        std::cout << "Неправильний вибір. Спробуйте ще раз.\n";
+        mvprintw(window_height, (screen_width - 90) / 2, "Incorrect choice. Please try again");
         return nullptr;
     }
 }
@@ -395,7 +408,8 @@ void UserInterface::saveScenarioToFile(const std::shared_ptr<ScenarioManager>& s
     getmaxyx(stdscr, screen_height, screen_width);
     char save;
     clear();
-    mvprintw(screen_height / 2 - 2, (screen_width - 35) / 2, "Save scenario to file? (y/n): ");
+    //mvprintw(screen_height / 2 - 2, (screen_width - 35) / 2, "Save scenario to file? (y/n): ")
+    mvprintw(13, (screen_width - 40) / 2, "Save scenario to file? (y/n): ");
     echo();  // Enable echoing
     scanw("%c", &save);
     noecho();  // Disable echoing
@@ -405,13 +419,15 @@ void UserInterface::saveScenarioToFile(const std::shared_ptr<ScenarioManager>& s
         std::wstring filePath = Utils::SaveFileSelectionDialog(
             OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Specify the scenario file name", L"JSON Files\0*.json\0");
         fsManager->saveScenarios(*scenario, Utils::wstring_to_utf8(filePath));
-        mvprintw(screen_height / 2, (screen_width - 50) / 2, "Scenario saved to file: %s", Utils::wstring_to_utf8(filePath).c_str());
+        mvprintw(14, (screen_width - 40) / 2, "Scenario saved to file: %s", Utils::wstring_to_utf8(filePath).c_str());
+        mvprintw(17, (screen_width - 40) / 2, "PRESS ENTER TO RETURN TO THE MENU");
         getch();  // Wait for user input
     }
     else
     {
-        mvprintw(screen_height / 2, (screen_width - 30) / 2, "Scenario not saved to file.");
-        //getch();  // Wait for user input
+        mvprintw(14, (screen_width - 41) / 2, "Scenario was not saved to a file!");
+        mvprintw(17, (screen_width - 41) / 2, "PRESS ENTER TO RETURN TO THE MENU");
+        getch();  // Wait for user input
     }
 }
 
@@ -422,6 +438,7 @@ void UserInterface::createScenario()
 
     // Get screen dimensions
     int screen_height, screen_width;
+    int window_height = 13;
     getmaxyx(stdscr, screen_height, screen_width);
 
     auto scenarioManager = std::make_shared<ScenarioManager>();
@@ -431,16 +448,16 @@ void UserInterface::createScenario()
 
     // Input name
     clear();
-    mvprintw(screen_height / 2 - 6, (screen_width - 20) / 2, "Enter scenario name:");
-    move(screen_height / 2 - 4, (screen_width - 50) / 2);  // Position the cursor for input
+    mvprintw(window_height, (screen_width - 30) / 2, "ENTER SCENARIO NAME");
+    move(window_height + 2, (screen_width - 20) / 2);          // Position the cursor for input
     echo();                                                // Enable echoing
     getnstr(name, sizeof(name) - 1);                       // Get user input
     noecho();                                              // Disable echoing
 
     // Input description
     clear();
-    mvprintw(screen_height / 2 - 3, (screen_width - 25) / 2, "Enter scenario description:");
-    move(screen_height / 2 - 1, (screen_width - 50) / 2);  // Position the cursor for input
+    mvprintw(window_height, (screen_width - 35) / 2, "ENTER SCENARIO DESCRIPTION");
+    move(window_height + 2, (screen_width - 20) / 2);      // Position the cursor for input
     echo();                                                // Enable echoing
     getnstr(description, sizeof(description) - 1);         // Get user input
     noecho();                                              // Disable echoing
@@ -453,8 +470,6 @@ void UserInterface::createScenario()
     {
         clear();
         size_t condChoice = displayConditionals();             // Use the ncurses-based display method
-        move(screen_height / 2 - 2, (screen_width - 20) / 2);  // Position the cursor for input
-        //refresh();                                             // Refresh the screen to display changes
 
         std::unique_ptr<IConditional> condition = createUserDefinedCondition(condChoice);
         if (!condition)
@@ -465,8 +480,8 @@ void UserInterface::createScenario()
         // Clear the window before displaying the next section
         clear();
         size_t taskChoice = displayTasks();  // Display the task selection menu
-        move(screen_height / 2 - 2, (screen_width - 20) / 2);
-
+        
+        clear();
         std::unique_ptr<ITask> task = createUserDefinedTask(taskChoice);
         if (!task)
         {
@@ -477,7 +492,7 @@ void UserInterface::createScenario()
         if (!scenario->getSteps().empty())
         {
             clear();
-            mvprintw(screen_height / 2 - 4, (screen_width - 35) / 2, "1.3) Setting ExecutionTypeCondition");
+            mvprintw(screen_height / 2 - 4, (screen_width - 25) / 2, "Setting ExecutionTypeCondition");
             execType = selectExecutionTypeCondition();
         }
 
@@ -486,8 +501,7 @@ void UserInterface::createScenario()
 
         char addAnother;
         clear();
-        mvprintw(screen_height / 2 - 4, (screen_width - 30) / 2, "Add another step to the scenario? (y/n): ");
-        //move(screen_height / 2 - 2, (screen_width - 20) / 2);  // Position the cursor for input
+        mvprintw(window_height, (screen_width - 50) / 2, "Add another step to the scenario? (y/n): ");
         echo();                                                // Enable echoing
         scanw(" %c", &addAnother);
         noecho();  // Disable echoing
@@ -505,75 +519,142 @@ void UserInterface::createScenario()
     endwin();
 }
 
-void printConditionInfo(const std::shared_ptr<ScenarioStep>& step)
+void printConditionInfo(WINDOW* win, const std::shared_ptr<ScenarioStep>& step, int& y)
 {
+    wattron(win, COLOR_PAIR(6));
     if (const auto* timeCond = dynamic_cast<const TimeCondition*>(step->getCondition()))
     {
-        std::cout << "TimeCondition (Година: " << timeCond->getHour() << ")\n";
+        mvwprintw(win, y++, 18, "TimeCondition (Hour: %d)", timeCond->getHour());
     }
     else if (const auto* batteryCond = dynamic_cast<const BatteryLevelCondition*>(step->getCondition()))
     {
-        std::cout << "BatteryLevelCondition (Рівень батареї: " << batteryCond->getCrucialLevel() << ")\n";
+        mvwprintw(win, y++, 18, "BatteryLevelCondition (Battery level: %d)", batteryCond->getCrucialLevel());
     }
+    wattroff(win, COLOR_PAIR(6));
 }
-
-void printTaskInfo(const std::shared_ptr<ScenarioStep>& step)
+void printTaskInfo(WINDOW* win, const std::shared_ptr<ScenarioStep>& step, int& y)
 {
+    wattron(win, COLOR_PAIR(7));
     if (dynamic_cast<const ChangePowerPlanTask*>(step->getTask()))
     {
-        std::cout << "ChangePowerPlanTask\n";
+        mvwprintw(win, y++, 18, "ChangePowerPlanTask");
     }
     else if (dynamic_cast<const MessageBoxTask*>(step->getTask()))
     {
-        std::cout << "MessageBoxTask\n";
+        mvwprintw(win, y++, 18, "MessageBoxTask");
     }
     else if (dynamic_cast<const ScheduleTask*>(step->getTask()))
     {
-        std::cout << "ScheduleTask\n";
+        mvwprintw(win, y++, 18, "ScheduleTask");
     }
     else if (dynamic_cast<const CaptureScreenTask*>(step->getTask()))
     {
-        std::cout << "CaptureScreenTask\n";
+        mvwprintw(win, y++, 18, "CaptureScreenTask");
     }
+    wattroff(win, COLOR_PAIR(7));
+
 }
 
 void UserInterface::viewScenarios()
 {
-    endwin();
-    clearScreen();
-    std::cout << "Створені сценарії:\n";
+
+   initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);  // Enable keypad input for stdscr
+
+    int screen_height, screen_width;
+    getmaxyx(stdscr, screen_height, screen_width);
+    curs_set(0);  // Hide cursor
+
+    // Create a pad to contain all scenario information
+    int pad_height = 1000;  // Arbitrary large height for the pad
+    int pad_width = screen_width;
+    WINDOW* pad = newpad(pad_height, pad_width);
+    int y = 1;  // Start y-coordinate for printing scenario info
+
+    mvwprintw(pad, y++, (screen_width / 2) - 10, "CREATED SCENARIOS");
+    mvwprintw(pad, y++, (screen_width / 2) - 12, "USE ↓ and ↑ to scroll");
+
     int index = 1;
     for (const auto& sm : scenarioUserBuffer)
     {
-        std::cout << "# " << index++ << ":\n";
         for (const auto& scenario : sm->getScenarios())
         {
-            std::cout << "\n      Назва: " << scenario->getName() << "\n";
-            std::cout << "      Опис : " << scenario->getDescription() << "\n";
+            mvwprintw(pad, y++, 2, "#%d:", index++);
+            mvwprintw(pad, y++, 6, "Name: %s", scenario->getName().c_str());
+            mvwprintw(pad, y++, 6, "Description: %s", scenario->getDescription().c_str());
+
             bool isFirstStep = true;
             for (const auto& step : scenario->getSteps())
             {
-                std::cout << "           - Умова: ";
-                printConditionInfo(step);
-                std::cout << "             Завдання: ";
-                printTaskInfo(step);
+                mvwprintw(pad, y++, 6, "- Condition: ");
+                printConditionInfo(pad, step, y);
+                mvwprintw(pad, y++, 6, "Tasks: ");
+                printTaskInfo(pad, step, y);
                 if (!isFirstStep)
                 {
-                    std::cout << "              Виконується ";
                     switch (step->getExecutionCondition())
                     {
-                        case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
-                        case ExecutionTypeCondition::FAILURE: std::cout << "якщо попередній завершився невдало!\n"; break;
-                        case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "за будь-яких умов!\n"; break;
+                        case ExecutionTypeCondition::SUCCESS:
+                            wattron(pad, COLOR_PAIR(4));
+                            mvwprintw(pad, y++, 6, "Executed if the previous one was successful!");
+                            wattroff(pad, COLOR_PAIR(4));
+                            break;
+                        case ExecutionTypeCondition::FAILURE:
+                            wattron(pad, COLOR_PAIR(3));
+                            mvwprintw(pad, y++, 6, "Executed if the previous one failed");
+                            wattroff(pad, COLOR_PAIR(3));
+                            break;
+                        case ExecutionTypeCondition::UNCONDITIONAL:
+                            wattron(pad, COLOR_PAIR(5));
+                            mvwprintw(pad, y++, 6, "Executed under any conditions!");
+                            wattroff(pad, COLOR_PAIR(5));
+                            break;
                     }
                 }
                 isFirstStep = false;
             }
+            ++y;
         }
     }
-    std::cout << "\nНатисніть Enter для повернення до головного меню...";
-    std::cin.ignore(32767, '\n');
-    clearScreen();
+
+    mvwprintw(pad, y + 3, 2, "Press Enter to return to the main menu...");
+
+    int pad_pos = 0;
+    int pad_height_view = screen_height - 1;  // Viewport height
+    int pad_width_view = screen_width - 1;    // Viewport width
+
+    // Initial display of the pad
+    prefresh(pad, pad_pos, 0, 0, 0, pad_height_view, pad_width_view);
+
+    // Handle scrolling
+    int ch;
+    while ((ch = wgetch(stdscr)) != '\n')
+    {
+        switch (ch)
+        {
+            case KEY_UP:
+                if (pad_pos > 0)
+                {
+                    pad_pos--;
+                }
+                break;
+            case KEY_DOWN:
+                if (pad_pos < pad_height - pad_height_view - 1)
+                {
+                    pad_pos++;
+                }
+                break;
+            default: break;
+        }
+        prefresh(pad, pad_pos, 0, 0, 0, pad_height_view, pad_width_view);
+    }
+
+    delwin(pad);
+    clear();
+    refresh();
+    endwin();
 }
 
 void UserInterface::executeScenario()
@@ -633,9 +714,9 @@ void UserInterface::executeScenario()
                 for (const auto& step : scenario->getSteps())
                 {
                     std::cout << "           - Умова: ";
-                    printConditionInfo(step);
+                    printConditionInfo(nullptr, step, index);
                     std::cout << "             Завдання: ";
-                    printTaskInfo(step);
+                    printTaskInfo(nullptr, step, index);
                     if (!isFirstStep)
                     {
                         std::cout << "             Виконується ";
@@ -766,7 +847,7 @@ size_t UserInterface::displayConditionals() const
     box(menuwin, 0, 0);
     refresh();
     wrefresh(menuwin);
-    int start_x = (window_width - 25) / 2;  // Assuming maximum item length is 25 characters
+    int start_x = (window_width - 20) / 2;  // Assuming maximum item length is 25 characters
     mvprintw(window_height - 1, window_x + start_x, "CONDITIONAL LIST");
     std::vector<std::string> conditionals = {"BatteryLevelCondition", "TimeCondition"};
 
@@ -832,10 +913,8 @@ size_t UserInterface::displayTasks() const
     box(menuwin, 0, 0);
     refresh();
     wrefresh(menuwin);
-    int start_x = (window_width - 25) / 2;  // Assuming maximum item length is 25 characters
-    attron(COLOR_PAIR(3));
-    mvprintw(window_height - 1, window_x + start_x, "TASK LIST");
-    attron(COLOR_PAIR(1));
+    int start_x = (window_width - 20) / 2;  // Assuming maximum item length is 25 characters
+    mvprintw(window_height - 1, window_x + start_x + 5, "TASK LIST");
     std::vector<std::string> tasks = {"ChangePowerPlanTask", "MessageBoxTask", "ScheduleTask", "CaptureScreenTask"};
 
     size_t choice;
@@ -982,19 +1061,72 @@ void UserInterface::stopSelectedScenario()
 
 ExecutionTypeCondition UserInterface::selectExecutionTypeCondition() const
 {
-    endwin();
-    std::cout << "1) SUCCESS\n";
-    std::cout << "2) FAILURE\n";
-    std::cout << "3) UNCONDITIONAL\n";
-    int choice;
-    std::cin >> choice;
+    int screen_height, screen_width;
+    getmaxyx(stdscr, screen_height, screen_width);
+    curs_set(0);  // Hide cursor
 
-    switch (choice)
+    int window_height = 7;  // Adjust this as needed
+    int window_width = 45;
+    int window_y = (screen_height - window_height) / 2;
+    int window_x = (screen_width - window_width) / 2;
+
+    WINDOW* menuwin = newwin(window_height, window_width, window_y, window_x);
+    box(menuwin, 0, 0);
+    refresh();
+    wrefresh(menuwin);
+    int start_x = (window_width - 10) / 2;  // Adjust this as needed
+    //mvprintw(window_y - 2, window_x + start_x, "EXECUTION TYPE LIST");
+
+    std::vector<std::string> executionTypes = {"SUCCESS", "FAILURE", "UNCONDITIONAL"};
+
+    size_t choice;
+    size_t highlight = 0;
+
+    while (true)
     {
-        case 1: return ExecutionTypeCondition::SUCCESS;
-        case 2: return ExecutionTypeCondition::FAILURE;
-        case 3: return ExecutionTypeCondition::UNCONDITIONAL;
-        default: std::cout << "Неправильний вибір. Використовується UNCONDITIONAL.\n"; return ExecutionTypeCondition::UNCONDITIONAL;
+        for (size_t i = 0; i < executionTypes.size(); i++)
+        {
+            if (i == highlight)
+            {
+                wattron(menuwin, COLOR_PAIR(2));
+            }
+            else
+            {
+                wattron(menuwin, COLOR_PAIR(1));
+            }
+            mvwprintw(menuwin, i + 1, start_x, executionTypes[i].c_str());
+            wattroff(menuwin, COLOR_PAIR(1) | COLOR_PAIR(2));
+        }
+        wrefresh(menuwin);
+
+        choice = getch();
+
+        switch (choice)
+        {
+            case KEY_UP:
+                highlight--;
+                if (highlight < 0)
+                {
+                    highlight = executionTypes.size() - 1;
+                }
+                break;
+            case KEY_DOWN:
+                highlight++;
+                if (highlight >= executionTypes.size())
+                {
+                    highlight = 0;
+                }
+                break;
+            case 10:  // Enter key for selection
+                delwin(menuwin);
+                switch (highlight)
+                {
+                    case 0: return ExecutionTypeCondition::SUCCESS;
+                    case 1: return ExecutionTypeCondition::FAILURE;
+                    case 2: return ExecutionTypeCondition::UNCONDITIONAL;
+                }
+            default: break;
+        }
     }
 }
 
@@ -1009,40 +1141,101 @@ void UserInterface::loadScenarioFromFile()
 
 void UserInterface::viewLoadedScenarios()
 {
-    endwin();
-    clearScreen();
-    std::cout << "Завантажені сценарії:\n";
+    initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);  // Enable keypad input for stdscr
+
+    int screen_height, screen_width;
+    getmaxyx(stdscr, screen_height, screen_width);
+    curs_set(0);  // Hide cursor
+
+    // Create a pad to contain all scenario information
+    int pad_height = 1000;  // Arbitrary large height for the pad
+    int pad_width = screen_width;
+    WINDOW* pad = newpad(pad_height, pad_width);
+    int y = 1;  // Start y-coordinate for printing scenario info
+
+    mvwprintw(pad, y++, (screen_width / 2) - 10, "LOADED SCENARIOS");
+    mvwprintw(pad, y++, (screen_width / 2) - 12, "USE ↓ and ↑ to scroll");
+
     int index = 1;
     for (const auto& sm : scenarioFileBuffer)
     {
-        std::cout << "# " << index++ << ":\n";
         for (const auto& scenario : sm->getScenarios())
         {
-            std::cout << "\n      Назва: " << scenario->getName() << "\n";
-            std::cout << "      Опис : " << scenario->getDescription() << "\n";
+            mvwprintw(pad, y++, 2, "#%d:", index++);
+            mvwprintw(pad, y++, 6, "Name: %s", scenario->getName().c_str());
+            mvwprintw(pad, y++, 6, "Description: %s", scenario->getDescription().c_str());
+
             bool isFirstStep = true;
             for (const auto& step : scenario->getSteps())
             {
-                std::cout << "           - Умова: ";
-                printConditionInfo(step);
-                std::cout << "             Завдання: ";
-                printTaskInfo(step);
+                mvwprintw(pad, y++, 6, "- Condition: ");
+                printConditionInfo(pad, step, y);
+                mvwprintw(pad, y++, 6, "Tasks: ");
+                printTaskInfo(pad, step, y);
                 if (!isFirstStep)
                 {
-                    std::cout << "            Виконується ";
                     switch (step->getExecutionCondition())
                     {
-                        case ExecutionTypeCondition::SUCCESS: std::cout << "якщо попередній завершився успішно!\n"; break;
-                        case ExecutionTypeCondition::FAILURE: std::cout << "якщо попередній завершився невдало!\n"; break;
-                        case ExecutionTypeCondition::UNCONDITIONAL: std::cout << "за будь-яких умов!\n"; break;
+                        case ExecutionTypeCondition::SUCCESS:
+                            wattron(pad, COLOR_PAIR(4));
+                            mvwprintw(pad, y++, 6, "Executed if the previous one was successful!");
+                            wattroff(pad, COLOR_PAIR(4));
+                            break;
+                        case ExecutionTypeCondition::FAILURE:
+                            wattron(pad, COLOR_PAIR(3));
+                            mvwprintw(pad, y++, 6, "Executed if the previous one failed");
+                            wattroff(pad, COLOR_PAIR(3));
+                            break;
+                        case ExecutionTypeCondition::UNCONDITIONAL:
+                            wattron(pad, COLOR_PAIR(5));
+                            mvwprintw(pad, y++, 6, "Executed under any conditions!");
+                            wattroff(pad, COLOR_PAIR(5));
+                            break;
                     }
                 }
                 isFirstStep = false;
             }
+            ++y;
         }
     }
-    std::cout << "\nНатисніть Enter для повернення до головного меню...";
-    std::cin.ignore(32767, '\n');
-    std::cin.get();
-    // menu();
+
+    mvwprintw(pad, y + 3, 2, "Press Enter to return to the main menu...");
+
+    int pad_pos = 0;
+    int pad_height_view = screen_height - 1;  // Viewport height
+    int pad_width_view = screen_width - 1;    // Viewport width
+
+    // Initial display of the pad
+    prefresh(pad, pad_pos, 0, 0, 0, pad_height_view, pad_width_view);
+
+    // Handle scrolling
+    int ch;
+    while ((ch = wgetch(stdscr)) != '\n')
+    {
+        switch (ch)
+        {
+            case KEY_UP:
+                if (pad_pos > 0)
+                {
+                    pad_pos--;
+                }
+                break;
+            case KEY_DOWN:
+                if (pad_pos < pad_height - pad_height_view - 1)
+                {
+                    pad_pos++;
+                }
+                break;
+            default: break;
+        }
+        prefresh(pad, pad_pos, 0, 0, 0, pad_height_view, pad_width_view);
+    }
+
+    delwin(pad);
+    clear();
+    refresh();
+    endwin();
 }
