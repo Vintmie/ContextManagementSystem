@@ -25,7 +25,8 @@ private:
     size_t displayTasks() const;
 
 
-    std::vector<std::shared_ptr<Scenario>>getUnique();
+    std::vector<std::shared_ptr<Scenario>> getUnique(bool isNotThread = true);
+
 
     void showRunningScenarios();
 
