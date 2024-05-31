@@ -95,7 +95,7 @@ int menu()
     refresh();
     wrefresh(menuwin);
     int start_x = (window_width - 25) / 2;  // Assuming maximum item length is 25 characters
-    std::string menu_items[] = {"Create New Scenario", "View Created Scenarios", "Scenario Manager", "Load Scenario From File",
+    std::string menu_items[] = {"Create New Scenario", "View Created Scenarios", "Scenario Executor", "Load Scenario From File",
         "View Loaded Scenarios", "Start Periodic Execution", "Show Running Scenarios", "Stop Selected Scenario", "Stop All Threads",
         "Exit Program"};
 
@@ -114,7 +114,7 @@ int menu()
             {
                 wattron(menuwin, COLOR_PAIR(1));
             }
-            mvwprintw(menuwin, i + 1, start_x, menu_items[i].c_str());
+            mvwprintw(menuwin, i + 1, start_x+3, menu_items[i].c_str());
             wattroff(menuwin, COLOR_PAIR(1) | COLOR_PAIR(2));
         }
         wrefresh(menuwin);
@@ -167,135 +167,6 @@ void UserInterface::showMainMenu()
         }
     }
 
-}
-
-
-void UserInterface::startPeriodicExecution()
-{
-    clearScreen();
-    if (scenarioUserBuffer.empty() && scenarioFileBuffer.empty())
-    {
-        std::cout << "Доступних сценаріїв для виконання немає\n";
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        return;
-    }
-
-    std::vector<std::shared_ptr<Scenario>> uniqueScenarios;
-    std::set<std::string> scenarioNames;
-
-    for (const auto& su : scenarioUserBuffer)
-    {
-        for (const auto& scenario : su->getScenarios())
-        {
-            if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
-            {
-                uniqueScenarios.push_back(scenario);
-                scenarioNames.insert(scenario->getName());
-            }
-        }
-    }
-
-    for (const auto& sf : scenarioFileBuffer)
-    {
-        for (const auto& scenario : sf->getScenarios())
-        {
-            if (scenarioNames.find(scenario->getName()) == scenarioNames.end())
-            {
-                uniqueScenarios.push_back(scenario);
-                scenarioNames.insert(scenario->getName());
-            }
-        }
-    }
-
-    std::cout << "Максимальна кількість одночасно запущених сценаріїв може становити: " << MAX_THREADS << "\n";
-    if (runningScenarioIds.size() >= MAX_THREADS)
-    {
-        std::cout << "Максимальна кількість потоків (" << MAX_THREADS << ") вже запущена.\n";
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        return;
-    }
-
-    std::cout << "Доступні сценарії для вибору:\n";
-    int index = 1;
-    for (const auto& scenario : uniqueScenarios)
-    {
-        std::cout << index << ") " << scenario->getName();
-        std::cout << ": " << scenario->getDescription() << "\n";
-        ++index;
-    }
-
-    int choice;
-    std::cout << "Виберіть сценарій для виконання: ";
-    std::cin >> choice;
-
-    if (choice <= 0 || choice > uniqueScenarios.size())
-    {
-        std::cout << "Неправильний вибір. Повернення до головного меню.\n";
-        return;
-    }
-
-    auto selectedScenario = uniqueScenarios[choice - 1];
-    int scenarioId = selectedScenario->getId();
-
-    if (runningScenarioIds.find(scenarioId) != runningScenarioIds.end())
-    {
-        std::cout << "Цей сценарій вже запущений.\n";
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        return;
-    }
-
-    if (runningScenarioIds.size() < MAX_THREADS)
-    {
-        scenarioPeriodicManager->addScenario(selectedScenario);
-
-        stopPeriodicExecutionFlag = false;
-
-        int executionInterval;
-        do
-        {
-            std::cout << "Введіть інтервал виконання сценарію (у хвилинах): ";
-            std::cin >> executionInterval;
-            if (executionInterval <= 0)
-            {
-                std::cout << "Неправильний інтервал. Будь ласка, введіть значення більше нуля.\n";
-            }
-        } while (executionInterval <= 0);
-
-        periodicExecutionThreads.emplace_back(
-            [this, selectedScenario, scenarioId, executionInterval]()
-            {
-                auto file_logger = LoggerManager::getThreadFileLogger(false);
-                std::thread::id thread_id = std::this_thread::get_id();
-                std::ostringstream oss;
-                oss << thread_id;
-                thread_id_str = oss.str();
-
-                std::unique_lock<std::mutex> lk(cv_m);
-                while (!stopPeriodicExecutionFlag)
-                {
-                    file_logger->info("======= Scenario {} start\n", selectedScenario->getName(), thread_id_str);
-                    selectedScenario->execute(false);
-                    file_logger->info("Scenario {} end =======\n", selectedScenario->getName(), thread_id_str);
-                    if (cv.wait_for(lk, std::chrono::minutes(executionInterval), [this] { return stopPeriodicExecutionFlag.load(); }))
-                        break;
-                }
-
-                runningScenarioIds.erase(scenarioId);
-            });
-
-        runningScenarioIds.insert(scenarioId);
-
-        std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожні " << executionInterval << " хвилин.\n";
-    }
-    else
-    {
-        std::cout << "Максимальна кількість потоків (" << MAX_THREADS << ") вже запущена.\n";
-    }
-
-    std::cout << "Натисніть Enter для повернення до головного меню...";
-    std::cin.ignore(32767, '\n');
-    std::cin.get();
-    // menu();
 }
 
 void UserInterface::stopPeriodicExecution()
@@ -661,13 +532,31 @@ void UserInterface::viewScenarios()
 
 void UserInterface::stopAllThreads()
 {
+    clearScreen();
+    int screen_height, screen_width;
+    getmaxyx(stdscr, screen_height, screen_width);
+    curs_set(0);  // Hide cursor
+
+    int window_height = 12;
+    int window_width = 45;
+    int window_y = (screen_height - window_height) / 2;
+    int window_x = (screen_width - window_width) / 2;
+
+    WINDOW* menuwin = newwin(window_height, window_width, window_y, window_x);
+    box(menuwin, 0, 0);
+    refresh();
+    wrefresh(menuwin);
+
     {
         std::lock_guard<std::mutex> lk(cv_m);
 
         if (periodicExecutionThreads.empty())
         {
-            std::cout << "Немає запущених сценаріїв для зупинки.\n";
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            mvprintw(13, (screen_width - 40) / 2, "There are no running tasks.");
+            mvprintw(14, (screen_width - 45) / 2, "Press ENTER to return to the menu...");
+            getch();
+            clear();
+            endwin();
             return;
         }
 
@@ -700,8 +589,11 @@ void UserInterface::stopAllThreads()
         scenarioPeriodicManager->removeScenario(scenario);
     }
 
-    std::cout << "Всі сценарії зупинено.\n";
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    mvprintw(13, (screen_width - 40) / 2, "All scenarios are stopped!");
+    mvprintw(14, (screen_width - 45) / 2, "Press ENTER to return to the menu...");
+    getch();
+    clear();
+    endwin();
 }
 
 void UserInterface::exitProgram()
@@ -709,7 +601,7 @@ void UserInterface::exitProgram()
     endwin();
     clearScreen();
     stopPeriodicExecution();
-    std::cout << "Програма завершена.\n";
+    //std::cout << "Програма завершена.\n";
     exit(0);
 }
 
@@ -845,101 +737,7 @@ size_t UserInterface::displayTasks() const
     }
 }
 
-void UserInterface::showRunningScenarios()
-{
-    endwin();
-    bool hasRunningScenarios = false;
 
-    for (auto& thread : periodicExecutionThreads)
-    {
-        if (thread.joinable())
-        {
-            hasRunningScenarios = true;
-            break;
-        }
-    }
-
-    if (hasRunningScenarios)
-    {
-        std::cout << "Максимальна кількість одночасно запущених сценаріїв повинна бути не більшою за: " << MAX_THREADS << "\n";
-        std::cout << "Запущені сценарії:\n";
-        int index = 1;
-        for (const auto& scenario : scenarioPeriodicManager->getScenarios())
-        {
-            std::cout << index << ") " << scenario->getName();
-            std::cout << ": " << scenario->getDescription() << "\n";
-            ++index;
-        }
-    }
-    else
-    {
-        std::cout << "Запущених сценаріїв немає.\n";
-    }
-
-    std::cout << "\nНатисніть Enter для повернення до головного меню...";
-    std::cin.ignore(32767, '\n');
-    std::cin.get();
-    // menu();
-}
-
-void UserInterface::stopSelectedScenario()
-{
-    endwin();
-    {
-        std::lock_guard<std::mutex> lk(cv_m);
-        stopPeriodicExecutionFlag = true;
-    }
-    cv.notify_all();
-
-    bool threadStopped = false;
-
-    for (auto& thread : periodicExecutionThreads)
-    {
-        if (thread.joinable())
-        {
-            thread.join();
-            threadStopped = true;
-            break;
-        }
-    }
-
-    if (!threadStopped)
-    {
-        std::cout << "Запущених сценаріїв немає.\n";
-    }
-    else
-    {
-        auto scenarios = scenarioPeriodicManager->getScenarios();
-
-        std::cout << "Запущені сценарії:\n";
-        int index = 1;
-        for (const auto& scenario : scenarios)
-        {
-            std::cout << index << ") " << scenario->getName();
-            std::cout << ": " << scenario->getDescription() << "\n";
-            ++index;
-        }
-
-        int choice;
-        std::cout << "Виберіть сценарій для зупинки: ";
-        std::cin >> choice;
-
-        if (choice <= 0 || choice > scenarios.size())
-        {
-            std::cout << "Неправильний вибір. Повернення до головного меню.\n";
-            return;
-        }
-
-        auto selectedScenario = scenarios[choice - 1];
-        scenarioPeriodicManager->removeScenario(selectedScenario);
-        std::cout << "Виконання обраного сценарію зупинено.\n";
-    }
-
-    //std::cout << "Натисніть Enter для повернення до головного меню...";
-    //std::cin.ignore(32767, '\n');
-    //std::cin.get();
-    // menu();
-}
 
 ExecutionTypeCondition UserInterface::selectExecutionTypeCondition() const
 {
@@ -1123,7 +921,7 @@ void UserInterface::viewLoadedScenarios()
 }
 
 
-std::vector<std::shared_ptr<Scenario>> UserInterface::getUnique()
+std::vector<std::shared_ptr<Scenario>> UserInterface::getUnique(bool isNotThread)
 {
 
     int screen_height, screen_width;
@@ -1153,9 +951,16 @@ std::vector<std::shared_ptr<Scenario>> UserInterface::getUnique()
     int pad_width = screen_width;
     WINDOW* pad = newpad(pad_height, pad_width);
     int y = 1;  // Start y-coordinate for printing scenario info
-
+    if (isNotThread == false)
+    {
+        wattron(pad, COLOR_PAIR(4));
+        mvwprintw(pad, y++, (screen_width / 2) - 32, "The maximum number of simultaneously running scripts can be %d !!!", MAX_THREADS);
+        wattron(pad, COLOR_PAIR(1));
+        ++y;
+        ++y;
+    }
     mvwprintw(pad, y++, (screen_width / 2) - 10, "AVAILABLE SCENARIOS");
-    mvwprintw(pad, y++, (screen_width / 2) - 12, "USE ↓ and ↑ to scroll");
+    mvwprintw(pad, y++, (screen_width / 2) - 11, "USE ↓ and ↑ to scroll");
 
     std::vector<std::shared_ptr<Scenario>> uniqueScenarios;
     std::set<std::string> scenarioNames;
@@ -1225,11 +1030,14 @@ std::vector<std::shared_ptr<Scenario>> UserInterface::getUnique()
         }
         ++y;
     }
-
     mvwprintw(pad, y + 3, 2, "Press Enter to to switch to the selection window...");
-    mvwprintw(pad, y + 4, 2, "In the selection window, use 'ENTER' to select a scenario");
-    mvwprintw(pad, y + 5, 2, "In the selection window, use 'U' to unselect a scenario");
-    mvwprintw(pad, y + 6, 2, "In the selection window, use 'ESC' to to start executing the generated set of scenarios.");
+    mvwprintw(pad, y + 4, 2, "Press ESC to to switch to the menu...");
+    mvwprintw(pad, y + 6, 2, "In the selection window, use 'ENTER' to select a scenario.");
+    if (isNotThread == true)
+    {
+        mvwprintw(pad, y + 7, 2, "In the selection window, use 'U' to unselect a scenario.");
+        mvwprintw(pad, y + 8, 2, "In the selection window, use 'ESC' to to start executing the generated set of scenarios.");
+    }
 
     int pad_pos = 0;
     int pad_height_view = screen_height - 1;  // Viewport height
@@ -1239,6 +1047,7 @@ std::vector<std::shared_ptr<Scenario>> UserInterface::getUnique()
     prefresh(pad, pad_pos, 0, 0, 0, pad_height_view, pad_width_view);
 
     // Handle scrolling
+ 
     int ch;
     while ((ch = wgetch(stdscr)) != '\n')
     {
@@ -1256,6 +1065,11 @@ std::vector<std::shared_ptr<Scenario>> UserInterface::getUnique()
                     pad_pos++;
                 }
                 break;
+            case 27:       // ESC key
+                delwin(pad);
+                clear();
+                endwin();  // End ncurses
+                return {};
             default: break;
         }
         prefresh(pad, pad_pos, 0, 0, 0, pad_height_view, pad_width_view);
@@ -1275,7 +1089,7 @@ std::vector<std::shared_ptr<Scenario>> UserInterface::getUnique()
     bool selected;  // Indicates if the item is currently selected
 };
 
-void print_list(WINDOW* win, const std::vector<MenuItem>& items, int start, int highlight)
+void print_list(WINDOW* win, const std::vector<MenuItem>& items, int start, int highlight, bool isNotThread = true)
 {
 
     int win_height, win_width;
@@ -1309,14 +1123,23 @@ void print_list(WINDOW* win, const std::vector<MenuItem>& items, int start, int 
                 wattron(win, COLOR_PAIR(21));
             }
         }
-        mvwprintw(win, i + 1, 1, "[%d] %s", items[start + i].count, items[start + i].name.c_str());  // Print item name with count
-        wattroff(win, A_REVERSE | COLOR_PAIR(11) | COLOR_PAIR(12));
+        if (isNotThread == false)
+        {
+            mvwprintw(win, i + 1, 1, "%s",items[start + i].name.c_str());  // Print item name without count
+            wattroff(win, A_REVERSE | COLOR_PAIR(11) | COLOR_PAIR(12));
+        }
+        else
+        {
+            mvwprintw(win, i + 1, 1, "[%d] %s", items[start + i].count, items[start + i].name.c_str());  // Print item name with count
+            wattroff(win, A_REVERSE | COLOR_PAIR(11) | COLOR_PAIR(12));
+        }
+
     }
     wrefresh(win);
 }
 
 
-std::vector<int> getChoices(std::vector<std::shared_ptr<Scenario>> uniqueScenarios)
+std::vector<int> getChoices(std::vector<std::shared_ptr<Scenario>> uniqueScenarios, bool isNotThread = true)
 {
 
     std::vector<MenuItem> tasks;
@@ -1340,7 +1163,7 @@ std::vector<int> getChoices(std::vector<std::shared_ptr<Scenario>> uniqueScenari
     int max_items = win_height - 2;  // Adjust for window border
     while (true)
     {
-        print_list(win, tasks, start, highlight);
+        print_list(win, tasks, start, highlight, isNotThread);
 
         int ch = wgetch(win);
         switch (ch)
@@ -1394,6 +1217,65 @@ std::vector<int> getChoices(std::vector<std::shared_ptr<Scenario>> uniqueScenari
     }
 }
 
+
+int getChoiceForThread(std::vector<std::shared_ptr<Scenario>> uniqueScenarios, bool isNotThread = false)
+{
+
+    std::vector<MenuItem> tasks;
+    // Create a window for displaying items
+    int win_height = 10;
+    int win_width = 30;
+    int start_y = (LINES - win_height) / 2;
+    int start_x = (COLS - win_width) / 2;
+    WINDOW* win = newwin(win_height, win_width, start_y, start_x);
+    box(win, 0, 0);
+    keypad(win, TRUE);  // Enable keypad input for the window
+    wrefresh(win);
+    for (int i = 0; i < uniqueScenarios.size(); ++i)
+    {
+        tasks.push_back({uniqueScenarios[i]->getName(), 0, false});  // Initialize count to 0 and selected to false
+    }
+    int highlight = 0;
+    int start = 0;
+    int list_size = int(tasks.size());
+    int max_items = win_height - 2;  // Adjust for window border
+    while (true)
+    {
+        print_list(win, tasks, start, highlight, isNotThread);
+
+        int ch = wgetch(win);
+        switch (ch)
+        {
+            case KEY_UP:
+                if (highlight > 0)
+                {
+                    highlight--;
+                    if (highlight < start)
+                    {
+                        start--;
+                    }
+                }
+                break;
+            case KEY_DOWN:
+                if (highlight < list_size - 1)
+                {
+                    highlight++;
+                    if (highlight >= start + max_items)
+                    {
+                        start++;
+                    }
+                }
+                break;
+            case 10:                               // Enter key
+                //tasks[highlight].count++;          // Increment count for the selected item
+                tasks[highlight].selected = true;  // Mark item as selected
+                endwin();                          // End ncurses
+                return highlight + 1;
+                break;
+        }
+    }
+}
+
 void UserInterface::executeScenario()
 {
     int screen_height, screen_width;
@@ -1432,4 +1314,300 @@ void UserInterface::executeScenario()
     getch();
     clear();
     endwin();
+}
+
+
+
+void UserInterface::showRunningScenarios()
+{
+    clearScreen();
+    bool hasRunningScenarios = false;
+    int screen_height, screen_width;
+    getmaxyx(stdscr, screen_height, screen_width);
+    curs_set(0);  // Hide cursor
+    keypad(stdscr, TRUE);  // Enable keypad input for stdscr
+
+    // Create a pad to contain all scenario information
+    int pad_height = 1000;  // Arbitrary large height for the pad
+    int pad_width = screen_width;
+    WINDOW* pad = newpad(pad_height, pad_width);
+    wrefresh(pad);
+    for (auto& thread : periodicExecutionThreads)
+    {
+        if (thread.joinable())
+        {
+            hasRunningScenarios = true;
+            break;
+        }
+    }
+
+    if (hasRunningScenarios)
+    {
+        int y = 1;  // Start y-coordinate for printing scenario info
+        mvwprintw(pad, y++, (screen_width / 2) - 10, "RUNNING SCENARIOS");
+        mvwprintw(pad, y++, (screen_width / 2) - 12, "USE ↓ and ↑ to scroll");
+
+        int index = 1;
+        for (const auto& scenario : scenarioPeriodicManager->getScenarios())
+        {
+            mvwprintw(pad, y++, 2, "#%d:", index++);
+            mvwprintw(pad, y++, 6, "Name: %s", scenario->getName().c_str());
+            mvwprintw(pad, y++, 6, "Description: %s", scenario->getDescription().c_str());
+            wattron(pad, COLOR_PAIR(3));
+            mvwprintw(pad, y++, 6, "Executes every: %d minute(s)", scenario->getExecutionInterval());
+            wattroff(pad, COLOR_PAIR(3));
+
+            bool isFirstStep = true;
+            for (const auto& step : scenario->getSteps())
+            {
+                mvwprintw(pad, y++, 6, "- Condition: ");
+                printConditionInfo(pad, step, y);
+                mvwprintw(pad, y++, 6, "Tasks: ");
+                printTaskInfo(pad, step, y);
+                if (!isFirstStep)
+                {
+                    switch (step->getExecutionCondition())
+                    {
+                        case ExecutionTypeCondition::SUCCESS:
+                            wattron(pad, COLOR_PAIR(4));
+                            mvwprintw(pad, y++, 6, "Executed if the previous one was successful!");
+                            wattroff(pad, COLOR_PAIR(4));
+                            break;
+                        case ExecutionTypeCondition::FAILURE:
+                            wattron(pad, COLOR_PAIR(3));
+                            mvwprintw(pad, y++, 6, "Executed if the previous one failed");
+                            wattroff(pad, COLOR_PAIR(3));
+                            break;
+                        case ExecutionTypeCondition::UNCONDITIONAL:
+                            wattron(pad, COLOR_PAIR(5));
+                            mvwprintw(pad, y++, 6, "Executed under any conditions!");
+                            wattroff(pad, COLOR_PAIR(5));
+                            break;
+                    }
+                }
+                isFirstStep = false;
+            }
+            ++y;
+        }
+        mvwprintw(pad, y + 3, 2, "Press Enter to return to the main menu...");
+
+        int pad_pos = 0;
+        int pad_height_view = screen_height - 1;  // Viewport height
+        int pad_width_view = screen_width - 1;    // Viewport width
+
+        // Initial display of the pad
+        prefresh(pad, pad_pos, 0, 0, 0, pad_height_view, pad_width_view);
+
+        // Handle scrolling
+        int ch;
+        while ((ch = wgetch(stdscr)) != '\n')
+        {
+            switch (ch)
+            {
+                case KEY_UP:
+                    if (pad_pos > 0)
+                    {
+                        pad_pos--;
+                    }
+                    break;
+                case KEY_DOWN:
+                    if (pad_pos < pad_height - pad_height_view - 1)
+                    {
+                        pad_pos++;
+                    }
+                    break;
+                default: break;
+            }
+            prefresh(pad, pad_pos, 0, 0, 0, pad_height_view, pad_width_view);
+        }
+        delwin(pad);
+        clear();
+        refresh();
+        endwin();
+    }
+    else
+    {
+        mvprintw(13, (screen_width - 40) / 2, "There are no running tasks.");
+        mvprintw(14, (screen_width - 45) / 2, "Press ENTER to return to the menu...");
+        getch();
+        clear();
+        endwin();
+        return;
+    }
+}
+
+
+void UserInterface::startPeriodicExecution()
+{
+
+    int screen_height, screen_width;
+    getmaxyx(stdscr, screen_height, screen_width);
+    std::vector<int> choices;
+    int choice;
+    auto uniqueScenarios = getUnique(false);
+    if (uniqueScenarios.empty())
+    {
+        return;
+    }
+    choice = getChoiceForThread(uniqueScenarios, false);
+
+    if (runningScenarioIds.size() >= MAX_THREADS)
+    {
+        clear();
+        mvprintw(13, (screen_width - 50) / 2, "The maximum number of threads (%d) is already running!", MAX_THREADS);
+        mvprintw(14, (screen_width - 35) / 2, "Press ENTER to return to the menu...");
+        getch();
+        clear();
+        endwin();
+        return;
+    }
+    //endwin();
+    //echo();
+    auto selectedScenario = uniqueScenarios[choice - 1];
+    int scenarioId = selectedScenario->getId();
+    clear();
+    if (runningScenarioIds.find(scenarioId) != runningScenarioIds.end())
+    {
+        mvprintw(13, (screen_width - 40) / 2, "This scenario has already been launched.");
+        mvprintw(14, (screen_width - 35) / 2, "Press ENTER to return to the menu...");
+        getch();
+        clear();
+        endwin();
+        return;
+    }
+
+    if (runningScenarioIds.size() < MAX_THREADS)
+    {
+        scenarioPeriodicManager->addScenario(selectedScenario);
+
+        stopPeriodicExecutionFlag = false;
+
+        int executionInterval = 1;
+        do
+        {
+            clear();
+            mvprintw(13, (screen_width - 75) / 2, "Enter the interval of the scenario execution (in minutes): ");
+            echo();  // Enable echoing
+            scanw("%d", &executionInterval);
+            noecho();  // Disable echoing
+   
+            if (executionInterval <= 0)
+            {
+                mvprintw(15, (screen_width - 50) / 2, "incorrectly specified interval!");
+            }
+        } while (executionInterval <= 0);
+
+        periodicExecutionThreads.emplace_back(
+            [this, selectedScenario, scenarioId, executionInterval]()
+            {
+                auto file_logger = LoggerManager::getThreadFileLogger(false);
+                std::thread::id thread_id = std::this_thread::get_id();
+                std::ostringstream oss;
+                oss << thread_id;
+                thread_id_str = oss.str();
+                selectedScenario->setExecutionInterval(executionInterval);
+                std::unique_lock<std::mutex> lk(cv_m);
+                while (!stopPeriodicExecutionFlag)
+                {
+                    file_logger->info("======= Scenario {} executes every {} minute(s)\n", selectedScenario->getName(),
+                        selectedScenario->getExecutionInterval(), thread_id_str);
+                    selectedScenario->execute(false);
+                    file_logger->info("Scenario {} ends but it executes every {} minute(s) =======\n", selectedScenario->getName(),
+                        selectedScenario->getExecutionInterval(),  thread_id_str);
+                    if (cv.wait_for(lk, std::chrono::minutes(executionInterval), [this] { return stopPeriodicExecutionFlag.load(); }))
+                        break;
+                }
+
+                runningScenarioIds.erase(scenarioId);
+            });
+
+        runningScenarioIds.insert(scenarioId);
+        clear();
+        mvprintw(13, (screen_width - 75) / 2,
+            "Scenario execution has started. The scenario will be executed every %d minutes", executionInterval);
+        //std::cout << "Виконання сценарію розпочато. Сценарій буде виконуватись кожні " << executionInterval << " хвилин.\n";
+    }
+    
+    // std::cout << "Натисніть Enter для повернення до головного меню...";
+    // std::cin.ignore(32767, '\n');
+    // std::cin.get();
+    //// menu();
+    getch();
+    clear();
+    endwin();
+}
+
+
+void UserInterface::stopSelectedScenario()
+{
+    clearScreen();
+
+    {
+        std::lock_guard<std::mutex> lk(cv_m);
+        stopPeriodicExecutionFlag = true;
+    }
+    cv.notify_all();
+
+    int screen_height, screen_width;
+    getmaxyx(stdscr, screen_height, screen_width);
+
+    if (periodicExecutionThreads.empty())
+    {
+        mvprintw(13, (screen_width - 40) / 2, "There are no running tasks.");
+        mvprintw(14, (screen_width - 45) / 2, "Press ENTER to return to the menu...");
+        getch();
+        clear();
+        endwin();
+        return;
+    }
+    std::vector<int> choices;
+    int choice;
+    auto scenarios = scenarioPeriodicManager->getScenarios();
+    if (scenarios.empty())
+    {
+        mvprintw(13, (screen_width - 40) / 2, "There are no running tasks.");
+        mvprintw(14, (screen_width - 45) / 2, "Press ENTER to return to the menu...");
+        getch();
+        clear();
+        endwin();
+        return;
+    }
+
+    choice = getChoiceForThread(scenarios, false);
+    clear();
+    endwin();
+   
+
+    bool threadStopped = false;
+
+    for (auto& thread : periodicExecutionThreads)
+    {
+        if (thread.joinable())
+        {
+            thread.join();
+            threadStopped = true;
+            break;
+        }
+    }
+
+    if (!threadStopped)
+    {
+        mvprintw(13, (screen_width - 40) / 2, "There are no running tasks.");
+        mvprintw(14, (screen_width - 45) / 2, "Press ENTER to return to the menu...");
+        getch();
+        clear();
+        endwin();
+        return;
+    }
+    else
+    {
+        auto selectedScenario = scenarios[choice - 1];
+        scenarioPeriodicManager->removeScenario(selectedScenario);
+        mvprintw(13, (screen_width - 45) / 2, "The selected scenario has been stopped.");
+        mvprintw(14, (screen_width - 42) / 2, "Press ENTER to return to the menu...");
+        getch();
+        clear();
+        endwin();
+        return;
+    }
 }

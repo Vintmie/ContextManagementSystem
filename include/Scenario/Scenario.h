@@ -25,6 +25,8 @@ public:
     std::string getDescription() const;
 
     int getId() const { return id; }
+    int getExecutionInterval() const { return executionInterval; }
+    void setExecutionInterval(int executionIntervalTime) { executionInterval = executionIntervalTime; }
 
 private:
     std::string generateUniqueScenarioName() const;
@@ -33,4 +35,5 @@ private:
     std::string description;
     int id;
     static int nextId;
+    int executionInterval = 0;
 };
