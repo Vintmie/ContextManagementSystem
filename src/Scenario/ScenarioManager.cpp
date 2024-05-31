@@ -1,6 +1,7 @@
 #include "Scenario/ScenarioManager.h"
 #include "FormatOutput.h"
 #include <iostream>
+#include <curses.h>
 
 ScenarioManager::ScenarioManager() {}
 
@@ -18,6 +19,11 @@ void ScenarioManager::removeScenario(std::shared_ptr<Scenario> scenario)
 
 void ScenarioManager::executeScenarios(bool isLog)
 {
+#ifdef _WIN32
+    std::system("cls");
+#else
+    std::system("clear");
+#endif
     auto res_logger = LoggerManager::get_unique_logger();
     for (const auto& scenario : scenarios)
     {
@@ -36,6 +42,7 @@ void ScenarioManager::executeScenarios(bool isLog)
         }
         file_logger->info("Scenario {} end =======\n", scenario->getName(), thread_id_str);
     }
+
 }
 
 void ScenarioManager::clearScenarios()
