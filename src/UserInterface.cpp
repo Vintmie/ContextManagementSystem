@@ -16,6 +16,7 @@
 #include "SystemInfo.h"
 #include <functional>
 #include <sstream>
+#include <filesystem>
 #include <curses.h>
 
 const int UserInterface::MAX_THREADS = SystemInfo::GetMaxThreads();
@@ -47,6 +48,7 @@ UserInterface::UserInterface()
 {
     LoggerManager::initializeFile();
     initCurses();
+    loadScenariosFromDirectory();
 }
 
 
@@ -287,10 +289,11 @@ void UserInterface::saveScenarioToFile(const std::shared_ptr<ScenarioManager>& s
 
     if (save == 'y' || save == 'Y')
     {
+        //endwin();
         std::wstring filePath = Utils::SaveFileSelectionDialog(
             OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT, L"Specify the scenario file name", L"JSON Files\0*.json\0");
         fsManager->saveScenarios(*scenario, Utils::wstring_to_utf8(filePath));
-        mvprintw(14, (screen_width - 40) / 2, "Scenario saved to file: %s", Utils::wstring_to_utf8(filePath).c_str());
+        mvprintw(15, 10, "Scenario saved to file: %s", Utils::wstring_to_utf8(filePath).c_str());
         mvprintw(17, (screen_width - 40) / 2, "PRESS ENTER TO RETURN TO THE MENU");
         getch();  // Wait for user input
     }
@@ -369,7 +372,8 @@ void UserInterface::createScenario()
 
         auto step = std::make_shared<ScenarioStep>(std::move(condition), std::move(task), execType);
         scenario->addStep(step);
-
+        scenarioManager->addScenario(scenario);
+        scenarioUserBuffer.push_back(scenarioManager);
         char addAnother;
         clear();
         mvprintw(window_height, (screen_width - 50) / 2, "Add another step to the scenario? (y/n): ");
@@ -382,8 +386,6 @@ void UserInterface::createScenario()
             break;
         }
     }
-    scenarioManager->addScenario(scenario);
-    scenarioUserBuffer.push_back(scenarioManager);
 
     clear();
     refresh();
@@ -1609,5 +1611,22 @@ void UserInterface::stopSelectedScenario()
         clear();
         endwin();
         return;
+    }
+}
+
+
+
+void UserInterface::loadScenariosFromDirectory()
+{
+    namespace fs = std::filesystem;
+    for (const auto& entry : fs::directory_iterator(directoryPath))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == L".json")
+        {
+            std::wstring filePath = entry.path().wstring();
+            std::shared_ptr<ScenarioManager> scenario = std::make_shared<ScenarioManager>();
+            fsManager->loadScenarios(*scenario, Utils::wstring_to_utf8(filePath));
+            scenarioFileBuffer.push_back(std::move(scenario));
+        }
     }
 }
