@@ -21,8 +21,8 @@ private:
     void createScenario();
     void viewScenarios();
     void executeScenario();
-    void displayConditionals() const;
-    void displayTasks() const;
+    size_t displayConditionals() const;
+    size_t displayTasks() const;
 
     void showRunningScenarios();
 
