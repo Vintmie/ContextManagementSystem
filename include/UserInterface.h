@@ -24,7 +24,7 @@ private:
     size_t displayConditionals() const;
     size_t displayTasks() const;
 
-
+    void startAutomaticPeriodicExecution(int executionInterval);
     std::vector<std::shared_ptr<Scenario>> getUnique(bool isNotThread = true);
 
     void loadScenariosFromDirectory();
